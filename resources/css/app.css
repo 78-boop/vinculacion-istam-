@@ -1,0 +1,270 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+@import '../../node_modules/bootstrap/scss/bootstrap';
+
+/* Colores personalizados para Vinculación ISTAM */
+:root {
+    --eva-green: #8BC449;
+    --eva-green-dark: #679E35;
+    --primary-color: #8BC449;
+}
+
+/* Estilos globales */
+body {
+    background-color: #f8f9fa;
+    font-family: 'Roboto', sans-serif;
+}
+
+/* Navbar personalizada */
+.navbar {
+    background-color: white;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.navbar-brand {
+    font-weight: 700;
+    color: var(--eva-green) !important;
+    font-size: 1.5rem;
+}
+
+.nav-link {
+    color: #555 !important;
+    transition: color 0.3s ease;
+    font-weight: 500;
+}
+
+.nav-link:hover {
+    color: var(--eva-green) !important;
+}
+
+.nav-link.active {
+    color: var(--eva-green) !important;
+    border-bottom: 3px solid var(--eva-green);
+    padding-bottom: 5px;
+}
+
+/* Dropdown menu */
+.dropdown-menu {
+    border: 1px solid #e9ecef;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.dropdown-item:hover {
+    background-color: #f0f7f1;
+    color: var(--eva-green);
+}
+
+/* Botones personalizados */
+.btn-primary {
+    background-color: var(--eva-green);
+    border-color: var(--eva-green);
+}
+
+.btn-primary:hover {
+    background-color: var(--eva-green-dark);
+    border-color: var(--eva-green-dark);
+}
+
+.btn-outline-primary {
+    color: var(--eva-green);
+    border-color: var(--eva-green);
+}
+
+.btn-outline-primary:hover {
+    background-color: var(--eva-green);
+    border-color: var(--eva-green);
+    color: white;
+}
+
+/* Tarjetas */
+.card {
+    border: 1px solid #e9ecef;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    transition: box-shadow 0.3s ease;
+}
+
+.card:hover {
+    box-shadow: 0 4px 12px rgba(139, 196, 73, 0.15);
+}
+
+.card-header {
+    background-color: #f8f9fa;
+    border-bottom: 2px solid #e9ecef;
+}
+
+.card-title {
+    color: #333;
+    font-weight: 600;
+}
+
+/* Tablas */
+.table {
+    border-collapse: collapse;
+}
+
+.table thead th {
+    background-color: #f8f9fa;
+    color: #333;
+    font-weight: 600;
+    border-bottom: 2px solid #dee2e6;
+}
+
+.table tbody tr:hover {
+    background-color: #f8f9fa;
+}
+
+.table tbody td {
+    vertical-align: middle;
+}
+
+/* Badges */
+.badge-success {
+    background-color: #28a745 !important;
+}
+
+.badge-warning {
+    background-color: #ffc107 !important;
+}
+
+.badge-danger {
+    background-color: #dc3545 !important;
+}
+
+.badge-info {
+    background-color: #17a2b8 !important;
+}
+
+/* Alertas */
+.alert {
+    border-radius: 6px;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.alert-success {
+    background-color: #d4edda;
+    border-color: #c3e6cb;
+    color: #155724;
+}
+
+.alert-danger {
+    background-color: #f8d7da;
+    border-color: #f5c6cb;
+    color: #721c24;
+}
+
+.alert-warning {
+    background-color: #fff3cd;
+    border-color: #ffeaa7;
+    color: #856404;
+}
+
+.alert-info {
+    background-color: #d1ecf1;
+    border-color: #bee5eb;
+    color: #0c5460;
+}
+
+/* Formularios */
+.form-control:focus {
+    border-color: var(--eva-green);
+    box-shadow: 0 0 0 0.2rem rgba(139, 196, 73, 0.25);
+}
+
+.form-label {
+    color: #333;
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+}
+
+/* Sidebar */
+.sidebar {
+    background-color: white;
+    border-right: 1px solid #e9ecef;
+}
+
+.sidebar-item {
+    padding: 10px 15px;
+    color: #555;
+    text-decoration: none;
+    display: block;
+    transition: all 0.3s ease;
+    border-left: 3px solid transparent;
+}
+
+.sidebar-item:hover {
+    background-color: #f8f9fa;
+    color: var(--eva-green);
+    border-left-color: var(--eva-green);
+}
+
+.sidebar-item.active {
+    background-color: #f0f7f1;
+    color: var(--eva-green);
+    border-left-color: var(--eva-green);
+    font-weight: 600;
+}
+
+/* Dashboard Stats */
+.stat-card {
+    background: white;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    text-align: center;
+}
+
+.stat-card h3 {
+    color: var(--eva-green);
+    font-weight: 700;
+    font-size: 2rem;
+    margin: 10px 0;
+}
+
+.stat-card p {
+    color: #666;
+    margin: 0;
+    font-size: 0.95rem;
+}
+
+/* Breadcrumbs */
+.breadcrumb {
+    background-color: transparent;
+    padding: 0.5rem 0;
+}
+
+.breadcrumb-item.active {
+    color: var(--eva-green);
+}
+
+/* Links */
+a {
+    color: var(--eva-green);
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+a:hover {
+    color: var(--eva-green-dark);
+    text-decoration: underline;
+}
+
+/* Footer */
+footer {
+    background-color: #f8f9fa;
+    border-top: 1px solid #e9ecef;
+    color: #666;
+    padding: 20px 0;
+    margin-top: 40px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .navbar-brand {
+        font-size: 1.2rem;
+    }
+
+    .card {
+        margin-bottom: 15px;
+    }
+}

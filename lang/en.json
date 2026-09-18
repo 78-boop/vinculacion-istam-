@@ -1,0 +1,11 @@
+{
+    "Correo electrónico": "Email address",
+    "Contraseña": "Password",
+    "Acceder": "Log in",
+    "¿Olvidó su contraseña?": "Forgot your password?",
+    "Las 'Cookies' deben estar habilitadas en su navegador": "'Cookies' must be enabled in your browser",
+    "Este sitio web utiliza dos cookies:": "This website uses two cookies:",
+    "Debe permitir esta cookie en su navegador para dar continuidad y permanecer conectado mientras navega por el sitio. Cuando cierre la sesión o cierre el navegador, esta cookie se borra (en el navegador y en el servidor).": "You need to allow this cookie in your browser to provide continuity and to remain logged-in when browsing the site. This cookie is removed when you log out or close the browser (session cookie).",
+    "Esta solo recuerda su sesión iniciada en el navegador cuando marca \"Recuérdame\". Es seguro rechazar esta cookie — solo tendrá que volver a iniciar sesión cada vez que cierre el navegador.": "The other cookie is purely for convenience, it usually remembers your logged-in session when you check \"Remember me\". It is safe to refuse this cookie - you will just be prompted to log in again each time you visit a new page.",
+    "OK": "OK"
+}
