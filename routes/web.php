@@ -12,6 +12,7 @@ use App\Http\Controllers\Admin\ActividadController;
 use App\Http\Controllers\Admin\InscripcionController;
 use App\Http\Controllers\Admin\UsuarioController;
 use App\Http\Controllers\Admin\CertificadoAdministrativoController;
+use App\Http\Controllers\Admin\TipoCertificadoController;
 use App\Models\RegistroHora;
 
 Route::get('/', function () {
@@ -84,6 +85,8 @@ Route::middleware('auth')->group(function () {
         ->name('actividades-vinculacion.index');
     Route::post('/mis-actividades-vinculacion/postular', [PostulacionActividadController::class, 'postular'])
         ->name('actividades-vinculacion.postular');
+    Route::delete('/mis-actividades-vinculacion/{postulacion}/cancelar', [PostulacionActividadController::class, 'cancelar'])
+        ->name('actividades-vinculacion.cancelar');
 
     Route::middleware('role:docente')->group(function () {
         Route::get('/docente/proyectos/crear', [\App\Http\Controllers\Admin\ProyectoVinculacionController::class, 'crearPropuesta'])
@@ -125,6 +128,8 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::resource('inscripciones', \App\Http\Controllers\Admin\InscripcionController::class)->parameters(['inscripciones' => 'inscripcione']);
     Route::resource('actividades', ActividadController::class)->parameters(['actividades' => 'actividad']);
     Route::resource('usuarios', UsuarioController::class)->parameters(['usuarios' => 'usuario']);
+    Route::resource('tipos-certificado', TipoCertificadoController::class)
+        ->parameters(['tipos-certificado' => 'tiposCertificado']);
 
     // ADMIN: aprobar/rechazar proyectos propuestos por un docente
     Route::post('/proyectos/{proyecto}/aprobar', [ProyectoVinculacionController::class, 'aprobar'])
@@ -139,6 +144,8 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
         ->name('certificados.generar');
     Route::get('/certificados-administrativos/{certificado}/descargar', [CertificadoAdministrativoController::class, 'descargar'])
         ->name('certificados.descargar');
+    Route::get('/certificados-administrativos/{certificado}/descargar-word', [CertificadoAdministrativoController::class, 'descargarWord'])
+        ->name('certificados.descargar-word');
 });
 
 // API ROUTES - CERTIFICADOS

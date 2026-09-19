@@ -91,7 +91,7 @@
                                 <td class="p-3 space-x-2">
                                     <a href="{{ route('admin.usuarios.edit', $usuario) }}" class="text-blue-600">Editar</a>
                                     @if ($usuario->id !== auth()->id())
-                                        <form action="{{ route('admin.usuarios.destroy', $usuario) }}" method="POST" class="inline" onsubmit="return confirm('¿Eliminar este usuario?')">
+                                        <form action="{{ route('admin.usuarios.destroy', $usuario) }}" method="POST" class="inline" data-confirm-title="¿Eliminar este usuario?" data-confirm-text="Esta acción no se puede deshacer.">
                                             @csrf
                                             @method('DELETE')
                                             <button type="submit" class="text-red-600">Eliminar</button>

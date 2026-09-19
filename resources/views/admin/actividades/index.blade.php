@@ -20,9 +20,11 @@
                 <table class="w-full text-left">
                     <thead class="bg-gray-100">
                         <tr>
-                            <th class="p-3">Estudiante</th>
                             <th class="p-3">Proyecto</th>
-                            <th class="p-3">Fecha</th>
+                            <th class="p-3">Docente</th>
+                            <th class="p-3">Estudiantes</th>
+                            <th class="p-3">Inicio</th>
+                            <th class="p-3">Finalización</th>
                             <th class="p-3">Lugar</th>
                             <th class="p-3">Horas</th>
                             <th class="p-3">Estado</th>
@@ -32,15 +34,19 @@
                     <tbody>
                         @forelse ($actividades as $actividad)
                             <tr class="border-t">
-                                <td class="p-3">{{ $actividad->inscripcion->estudiante->name ?? 'Sin asignar' }}</td>
-                                <td class="p-3">{{ $actividad->inscripcion->proyecto->nombre ?? '—' }}</td>
-                                <td class="p-3">{{ $actividad->fecha->format('d/m/Y') }}</td>
+                                <td class="p-3">{{ $actividad->proyecto->nombre ?? $actividad->inscripcion->proyecto->nombre ?? '—' }}</td>
+                                <td class="p-3">{{ $actividad->docente->name ?? '—' }}</td>
+                                <td class="p-3 text-sm">
+                                    {{ $actividad->inscripciones->pluck('estudiante.name')->filter()->join(', ') ?: ($actividad->inscripcion->estudiante->name ?? '—') }}
+                                </td>
+                                <td class="p-3">{{ $actividad->fecha_inicio?->format('d/m/Y') ?? $actividad->fecha?->format('d/m/Y') ?? '—' }}</td>
+                                <td class="p-3">{{ $actividad->fecha_finalizacion?->format('d/m/Y') ?? '—' }}</td>
                                 <td class="p-3">{{ $actividad->lugar ?? '—' }}</td>
                                 <td class="p-3">{{ $actividad->horas }}</td>
                                 <td class="p-3 capitalize">{{ $actividad->estado }}</td>
                                 <td class="p-3 space-x-2">
                                     <a href="{{ route('admin.actividades.edit', $actividad) }}" class="text-blue-600">Editar</a>
-                                    <form action="{{ route('admin.actividades.destroy', $actividad) }}" method="POST" class="inline" onsubmit="return confirm('¿Eliminar esta actividad?')">
+                                    <form action="{{ route('admin.actividades.destroy', $actividad) }}" method="POST" class="inline" data-confirm-title="¿Eliminar esta actividad?" data-confirm-text="Esta acción no se puede deshacer.">
                                         @csrf
                                         @method('DELETE')
                                         <button type="submit" class="text-red-600">Eliminar</button>
@@ -49,7 +55,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="7" class="p-3 text-center text-gray-500">No hay actividades registradas.</td>
+                                <td colspan="9" class="p-3 text-center text-gray-500">No hay actividades registradas.</td>
                             </tr>
                         @endforelse
                     </tbody>

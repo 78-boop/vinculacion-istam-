@@ -42,6 +42,15 @@
                             @if($postulacionActiva->actividad->descripcion)
                                 <p class="text-sm text-gray-600 mt-1">{{ $postulacionActiva->actividad->descripcion }}</p>
                             @endif
+                            @if($postulacionActiva->estado === 'pendiente')
+                                <form action="{{ route('actividades-vinculacion.cancelar', $postulacionActiva) }}" method="POST" class="mt-3" data-confirm-title="¿Cancelar tu inscripción?" data-confirm-text="Podrás seleccionar otra actividad después.">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="bg-red-600 hover:bg-red-700 text-white text-sm font-semibold py-2 px-4 rounded-lg transition">
+                                        Cancelar inscripción
+                                    </button>
+                                </form>
+                            @endif
                         </div>
                     @else
                         @if($ultimaRechazada)

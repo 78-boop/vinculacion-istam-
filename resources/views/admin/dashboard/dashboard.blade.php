@@ -111,7 +111,6 @@
                     <table class="w-full">
                         <thead class="bg-gray-50 border-b border-gray-200">
                             <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estudiante</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Proyecto</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Horas</th>
@@ -121,14 +120,11 @@
                         <tbody class="bg-white divide-y divide-gray-200">
                             @forelse($ultimasActividades as $actividad)
                                 <tr class="hover:bg-gray-50">
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                        {{ $actividad->inscripcion->estudiante->name }}
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                                        {{ $actividad->proyecto?->nombre ?? $actividad->inscripcion?->proyecto?->nombre ?? 'Sin proyecto' }}
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                                        {{ $actividad->inscripcion->proyecto->nombre }}
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                                        {{ $actividad->fecha->format('d/m/Y') }}
+                                        {{ ($actividad->fecha_inicio ?? $actividad->fecha)?->format('d/m/Y') ?? '—' }}
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
                                         {{ $actividad->horas }} h
@@ -145,7 +141,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="5" class="px-6 py-8 text-center text-gray-500 text-sm">
+                                    <td colspan="4" class="px-6 py-8 text-center text-gray-500 text-sm">
                                         No hay actividades registradas aún
                                     </td>
                                 </tr>

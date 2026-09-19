@@ -1,3 +1,13 @@
+@php
+    $usuario = Auth::user();
+    $iniciales = collect(preg_split('/\s+/', trim($usuario->name)))
+        ->filter()
+        ->take(2)
+        ->map(fn ($parte) => mb_substr($parte, 0, 1))
+        ->implode('');
+    $iniciales = mb_strtoupper($iniciales);
+@endphp
+
 <nav x-data="{ open: false }" class="bg-istam-light border-b-2 border-[#4a3520]">
     <!-- Primary Navigation Menu -->
     <div class="px-3 sm:px-4">
@@ -40,6 +50,9 @@
                         <x-nav-link :href="route('admin.certificados.index')" :active="request()->routeIs('admin.certificados.*')">
                             Certificados
                         </x-nav-link>
+                        <x-nav-link :href="route('admin.tipos-certificado.index')" :active="request()->routeIs('admin.tipos-certificado.*')">
+                            Documentos requeridos
+                        </x-nav-link>
                     @elseif (Auth::user()->role === 'docente')
                         <x-nav-link :href="route('docente.proyectos.create')" :active="request()->routeIs('docente.proyectos.*')">
                             Proponer Proyecto
@@ -65,8 +78,16 @@
             <div class="hidden sm:flex sm:items-center sm:ms-6">
                 <x-dropdown align="right" width="48">
                     <x-slot name="trigger">
-                        <button class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-gray-800 bg-white hover:text-indigo-700 focus:outline-none transition ease-in-out duration-150">
-                            <div>{{ Auth::user()->name }}</div>
+                        <button class="inline-flex items-center gap-2 px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-gray-800 bg-white hover:text-indigo-700 focus:outline-none transition ease-in-out duration-150">
+                            @if($usuario->profile_photo_path)
+                                <img src="{{ asset('storage/' . $usuario->profile_photo_path) }}" alt="Foto de {{ $usuario->name }}" style="width: 32px; height: 32px; border-radius: 9999px; object-fit: cover; border: 2px solid #006B47;">
+                            @else
+                                <span style="display: inline-flex; width: 32px; height: 32px; align-items: center; justify-content: center; flex-shrink: 0; border-radius: 9999px; background-color: #006B47; color: #FFFFFF; font-size: 12px; font-weight: 700;">
+                                    {{ $iniciales }}
+                                </span>
+                            @endif
+
+                            <span class="max-w-40 truncate">{{ $usuario->name }}</span>
 
                             <div class="ms-1">
                                 <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
@@ -133,6 +154,9 @@
                 <x-responsive-nav-link :href="route('admin.certificados.index')" :active="request()->routeIs('admin.certificados.*')">
                     Certificados
                 </x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('admin.tipos-certificado.index')" :active="request()->routeIs('admin.tipos-certificado.*')">
+                    Documentos requeridos
+                </x-responsive-nav-link>
             @elseif (Auth::user()->role === 'docente')
                 <x-responsive-nav-link :href="route('docente.proyectos.create')" :active="request()->routeIs('docente.proyectos.*')">
                     Proponer Proyecto
@@ -157,9 +181,18 @@
 
         <!-- Responsive Settings Options -->
         <div class="pt-4 pb-1 border-t border-green-700">
-            <div class="px-4">
-                <div class="font-medium text-base text-gray-900">{{ Auth::user()->name }}</div>
-                <div class="font-medium text-sm text-gray-700">{{ Auth::user()->email }}</div>
+            <div class="flex items-center gap-3 px-4">
+                @if($usuario->profile_photo_path)
+                    <img src="{{ asset('storage/' . $usuario->profile_photo_path) }}" alt="Foto de {{ $usuario->name }}" style="width: 40px; height: 40px; border-radius: 9999px; object-fit: cover; border: 2px solid #006B47;">
+                @else
+                    <span style="display: inline-flex; width: 40px; height: 40px; align-items: center; justify-content: center; flex-shrink: 0; border-radius: 9999px; background-color: #006B47; color: #FFFFFF; font-size: 14px; font-weight: 700;">
+                        {{ $iniciales }}
+                    </span>
+                @endif
+                <div>
+                    <div class="font-medium text-base text-gray-900">{{ $usuario->name }}</div>
+                    <div class="font-medium text-sm text-gray-700">{{ $usuario->email }}</div>
+                </div>
             </div>
 
             <div class="mt-3 space-y-1">

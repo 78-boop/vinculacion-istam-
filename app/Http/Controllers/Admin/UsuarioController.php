@@ -48,8 +48,8 @@ class UsuarioController extends Controller
             // 'coordinador' existe en la base de datos pero todavía no tiene
             // panel propio en DashboardController, así que no lo ofrecemos aquí.
             'role' => ['required', Rule::in(['admin', 'docente', 'estudiante'])],
-            'password' => ['required', 'confirmed', Rules\Password::defaults()],
-        ]);
+            'password' => ['required', 'confirmed', $this->passwordRule()],
+        ], $this->validationMessages());
 
         $usuario = User::create([
             'name' => $validated['name'],
@@ -84,8 +84,8 @@ class UsuarioController extends Controller
                 Rule::unique('users', 'email')->ignore($usuario->id),
             ],
             'role' => ['required', Rule::in(['admin', 'docente', 'estudiante'])],
-            'password' => ['nullable', 'confirmed', Rules\Password::defaults()],
-        ]);
+            'password' => ['nullable', 'confirmed', $this->passwordRule()],
+        ], $this->validationMessages());
 
         $usuario->name = $validated['name'];
         $usuario->cedula = $validated['cedula'] ?? null;
@@ -111,5 +111,33 @@ class UsuarioController extends Controller
         $usuario->delete();
 
         return redirect()->route('admin.usuarios.index')->with('success', 'Usuario eliminado.');
+    }
+
+    private function passwordRule(): Rules\Password
+    {
+        return Rules\Password::min(8)
+            ->mixedCase()
+            ->numbers()
+            ->symbols();
+    }
+
+    private function validationMessages(): array
+    {
+        return [
+            'name.required' => 'El nombre completo es obligatorio.',
+            'name.max' => 'El nombre no puede superar los :max caracteres.',
+            'email.required' => 'El correo electrónico es obligatorio.',
+            'email.email' => 'Escribe un correo electrónico válido.',
+            'email.unique' => 'Este correo electrónico ya está registrado.',
+            'role.required' => 'Selecciona un rol para el usuario.',
+            'role.in' => 'El rol seleccionado no es válido.',
+            'carrera_id.exists' => 'La carrera seleccionada no existe.',
+            'password.required' => 'La contraseña es obligatoria.',
+            'password.confirmed' => 'Las contraseñas no coinciden.',
+            'password.min' => 'La contraseña debe tener al menos :min caracteres.',
+            'password.mixed' => 'La contraseña debe incluir mayúsculas y minúsculas.',
+            'password.numbers' => 'La contraseña debe incluir al menos un número.',
+            'password.symbols' => 'La contraseña debe incluir al menos un símbolo, por ejemplo: ! @ # $ %.',
+        ];
     }
 }

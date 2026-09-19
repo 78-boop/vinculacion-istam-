@@ -167,7 +167,19 @@ document.addEventListener('DOMContentLoaded', function() {
             const form = this.closest('.form-aprobacion');
             const observaciones = form.querySelector('textarea[name="observaciones"]').value;
 
-            if (confirm('¿Estás seguro de que deseas aprobar estas horas?')) {
+            const confirmacion = await Swal.fire({
+                icon: 'question',
+                title: '¿Aprobar estas horas?',
+                text: 'El registro pasará a estado aprobado.',
+                showCancelButton: true,
+                confirmButtonText: 'Sí, aprobar',
+                cancelButtonText: 'Cancelar',
+                confirmButtonColor: '#006B47',
+                cancelButtonColor: '#6B7280',
+                reverseButtons: true
+            });
+
+            if (confirmacion.isConfirmed) {
                 try {
                     const response = await fetch(`/api/registro-horas/${registroId}/aprobar`, {
                         method: 'POST',
@@ -206,7 +218,19 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
 
-            if (confirm('¿Estás seguro de que deseas rechazar estas horas?')) {
+            const confirmacion = await Swal.fire({
+                icon: 'warning',
+                title: '¿Rechazar estas horas?',
+                text: 'El estudiante verá las observaciones indicadas.',
+                showCancelButton: true,
+                confirmButtonText: 'Sí, rechazar',
+                cancelButtonText: 'Cancelar',
+                confirmButtonColor: '#B91C1C',
+                cancelButtonColor: '#6B7280',
+                reverseButtons: true
+            });
+
+            if (confirmacion.isConfirmed) {
                 try {
                     const response = await fetch(`/api/registro-horas/${registroId}/rechazar`, {
                         method: 'POST',

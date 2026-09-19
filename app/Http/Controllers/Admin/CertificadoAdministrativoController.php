@@ -34,6 +34,12 @@ class CertificadoAdministrativoController extends Controller
         }
 
         $estudiante = $inscripcion->estudiante;
+        $postulacion = $inscripcion->postulacionesActividad()
+            ->with('actividad')
+            ->where('estado', 'aprobada')
+            ->latest('updated_at')
+            ->first();
+        $actividadNombre = $postulacion?->actividad?->titulo ?? 'Actividad de Vinculación';
 
         if (empty($estudiante->cedula)) {
             return redirect()->route('admin.usuarios.edit', $estudiante->id)
@@ -52,6 +58,7 @@ class CertificadoAdministrativoController extends Controller
             'estudiante' => $estudiante,
             'inscripcion' => $inscripcion,
             'proyecto' => $inscripcion->proyecto,
+            'actividadNombre' => $actividadNombre,
             'horas' => $inscripcion->horas_requeridas ?? 0,
             'gestorNombre' => $gestorNombre,
             'numeroCertificado' => $numeroCertificado,
@@ -88,5 +95,93 @@ class CertificadoAdministrativoController extends Controller
             $certificado->ruta_pdf,
             'Certificado-' . $certificado->numero_certificado . '.pdf'
         );
+    }
+
+    // Descargar una versión Word editable con los mismos datos del certificado.
+    public function descargarWord(CertificadoAdministrativo $certificado)
+    {
+        $inscripcion = $certificado->inscripcion()
+            ->with(['estudiante', 'proyecto'])
+            ->firstOrFail();
+
+        $estudiante = $inscripcion->estudiante;
+        $proyecto = $inscripcion->proyecto;
+        $fecha = now()->locale('es')->translatedFormat('d \\d\\e F \\d\\e\\l Y');
+        $plantilla = storage_path('app/templates/certificado-plantilla.docx');
+
+        if (!is_file($plantilla)) {
+            $plantilla = storage_path('app/templates/certificado-plantilla.docx.docx');
+        }
+
+        if (!is_file($plantilla)) {
+            abort(404, 'No se encontró la plantilla Word del certificado.');
+        }
+
+        $rutaWord = storage_path('app/certificado_' . $inscripcion->id . '_' . uniqid() . '.docx');
+        copy($plantilla, $rutaWord);
+
+        $zip = new \ZipArchive();
+        if ($zip->open($rutaWord) !== true) {
+            abort(500, 'No se pudo abrir la plantilla Word.');
+        }
+
+        $documentXml = $zip->getFromName('word/document.xml');
+
+        $escaparXml = static fn (string $valor): string => htmlspecialchars($valor, ENT_XML1 | ENT_COMPAT, 'UTF-8');
+
+        // La plantilla conserva cada dato en sus propios fragmentos de Word para no perder estilos.
+        $documentXml = preg_replace_callback(
+            '~(<w:t\b[^>]*>)ESTUDIANTE(</w:t>)~',
+            fn (array $coincidencia): string => $coincidencia[1] . $escaparXml(strtoupper($estudiante->name)) . $coincidencia[2],
+            $documentXml,
+            1
+        );
+        $documentXml = preg_replace_callback(
+            '~(identidad.*?<w:t\b[^>]*>)[0-9]{6,20}(</w:t>)~s',
+            fn (array $coincidencia): string => $coincidencia[1] . $escaparXml((string) $estudiante->cedula) . $coincidencia[2],
+            $documentXml,
+            1
+        );
+        $documentXml = preg_replace_callback(
+            '~(<w:t\b[^>]*>)Proyecto Test(</w:t>)~',
+            fn (array $coincidencia): string => $coincidencia[1] . $escaparXml($proyecto->nombre) . $coincidencia[2],
+            $documentXml,
+            1
+        );
+
+        // La fecha está separada en varios fragmentos; se reemplaza dentro de su párrafo conservando su formato.
+        $documentXml = preg_replace_callback(
+            '~<w:p\b[^>]*>.*?</w:p>~s',
+            function (array $coincidencia) use ($escaparXml, $fecha): string {
+                if (strpos($coincidencia[0], 'Yantzaza,') === false) {
+                    return $coincidencia[0];
+                }
+
+                $primerFragmento = true;
+
+                return preg_replace_callback(
+                    '~(<w:t\b[^>]*>)(.*?)(</w:t>)~s',
+                    function (array $fragmento) use (&$primerFragmento, $escaparXml, $fecha): string {
+                        if ($primerFragmento) {
+                            $primerFragmento = false;
+                            return $fragmento[1] . $escaparXml('Yantzaza, ' . $fecha) . $fragmento[3];
+                        }
+
+                        return $fragmento[1] . $fragmento[3];
+                    },
+                    $coincidencia[0]
+                );
+            },
+            $documentXml,
+            1
+        );
+
+        $zip->addFromString('word/document.xml', $documentXml);
+        $zip->close();
+
+        return response()->download(
+            $rutaWord,
+            'Certificado-' . $certificado->numero_certificado . '.docx'
+        )->deleteFileAfterSend(true);
     }
 }

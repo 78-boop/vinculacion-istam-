@@ -61,7 +61,7 @@
                         </div>
                         @if($actividad->activo)
                             <form action="{{ route('docente.actividades-vinculacion.desactivar', $actividad->id) }}" method="POST"
-                                  onsubmit="return confirm('¿Desactivar esta actividad? Ya no aparecerá para los estudiantes.');">
+                                  data-confirm-title="¿Desactivar esta actividad?" data-confirm-text="Ya no aparecerá para los estudiantes.">
                                 @csrf
                                 <button type="submit" class="text-red-600 text-sm hover:underline">Desactivar</button>
                             </form>

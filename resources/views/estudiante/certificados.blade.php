@@ -40,6 +40,7 @@
                                 <tr class="text-left text-xs font-semibold text-gray-500 uppercase">
                                     <th class="py-2 pr-4">Código</th>
                                     <th class="py-2 pr-4">Documento</th>
+                                    <th class="py-2 pr-4">Subido el</th>
                                     <th class="py-2 pr-4">Estado</th>
                                     <th class="py-2 pr-4">Observación del docente</th>
                                     <th class="py-2 pr-4">Acción</th>
@@ -66,6 +67,9 @@
                                     <tr>
                                         <td class="py-3 pr-4 font-mono text-sm text-gray-700">{{ $tipo->codigo }}</td>
                                         <td class="py-3 pr-4 text-sm text-gray-800">{{ $tipo->nombre }}</td>
+                                        <td class="py-3 pr-4 text-sm text-gray-600 whitespace-nowrap">
+                                            {{ $subido?->updated_at?->format('d/m/Y H:i') ?? '—' }}
+                                        </td>
                                         <td class="py-3 pr-4">
                                             <span class="px-2 py-1 rounded-full text-xs font-semibold {{ $colores[$estado] }}">
                                                 {{ $etiquetas[$estado] }}

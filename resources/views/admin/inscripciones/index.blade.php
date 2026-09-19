@@ -38,7 +38,7 @@
                                 <td class="p-3 capitalize">{{ $inscripcion->estado }}</td>
                                 <td class="p-3 space-x-2">
                                     <a href="{{ route('admin.inscripciones.edit', $inscripcion) }}" class="text-blue-600">Editar</a>
-                                    <form action="{{ route('admin.inscripciones.destroy', $inscripcion) }}" method="POST" class="inline" onsubmit="return confirm('¿Eliminar esta inscripción?')">
+                                    <form action="{{ route('admin.inscripciones.destroy', $inscripcion) }}" method="POST" class="inline" data-confirm-title="¿Eliminar esta inscripción?" data-confirm-text="Esta acción no se puede deshacer.">
                                         @csrf
                                         @method('DELETE')
                                         <button type="submit" class="text-red-600">Eliminar</button>

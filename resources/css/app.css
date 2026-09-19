@@ -16,6 +16,31 @@ body {
     font-family: 'Roboto', sans-serif;
 }
 
+.actividad-datepicker,
+.actividad-datepicker.flatpickr-input {
+    min-height: 46px;
+    font-size: 1rem;
+}
+
+.flatpickr-calendar {
+    font-size: 1rem;
+    border: 1px solid #b7dfc9;
+    box-shadow: 0 12px 28px rgba(0, 107, 71, 0.18);
+}
+
+.flatpickr-day.selected,
+.flatpickr-day.selected:hover {
+    background: #006B47;
+    border-color: #006B47;
+}
+
+.flatpickr-months .flatpickr-month,
+.flatpickr-current-month .flatpickr-monthDropdown-months,
+.flatpickr-current-month input.cur-year {
+    color: #065F46;
+    font-weight: 700;
+}
+
 /* Navbar personalizada */
 .navbar {
     background-color: white;

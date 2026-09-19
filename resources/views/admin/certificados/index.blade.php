@@ -56,8 +56,8 @@
                                         </form>
 
                                         @if($inscripcion->certificadoAdministrativo)
-                                            <a href="{{ route('admin.certificados.descargar', $inscripcion->certificadoAdministrativo->id) }}"
-                                               class="text-indigo-600 text-sm hover:underline">Descargar PDF</a>
+                                                          <a href="{{ route('admin.certificados.descargar-word', $inscripcion->certificadoAdministrativo->id) }}"
+                                                              class="bg-green-700 hover:bg-green-800 text-white text-xs font-semibold py-1.5 px-3 rounded-lg transition">Descargar Word</a>
                                         @endif
                                     </div>
                                 </td>

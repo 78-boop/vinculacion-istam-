@@ -4,6 +4,12 @@
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="csrf-token" content="{{ csrf_token() }}">
+        @if(session('success') || session('error') || session('warning') || $errors->any())
+            <meta name="sistema-flash"
+                  data-icon="{{ $errors->any() || session('error') ? 'error' : (session('warning') ? 'warning' : 'success') }}"
+                  data-title="{{ $errors->any() || session('error') ? 'Revisa la información' : (session('warning') ? 'Aviso' : 'Operación realizada') }}"
+                  data-text="{{ $errors->any() ? $errors->all()[0] : (session('success') ?? session('warning') ?? session('error')) }}">
+        @endif
 
         <title>{{ config('app.name', 'Vinculación ISTAM') }}</title>
 
@@ -30,25 +36,6 @@
             <!-- Page Content -->
             <main class="flex-grow-1">
                 <div class="container-fluid py-4">
-                    @if ($errors->any())
-                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                            <strong>¡Error!</strong>
-                            <ul class="mb-0">
-                                @foreach ($errors->all() as $error)
-                                    <li>{{ $error }}</li>
-                                @endforeach
-                            </ul>
-                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                        </div>
-                    @endif
-
-                    @if (session('success'))
-                        <div class="alert alert-success alert-dismissible fade show" role="alert">
-                            {{ session('success') }}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                        </div>
-                    @endif
-
                     {{ $slot }}
                 </div>
             </main>

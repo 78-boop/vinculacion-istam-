@@ -34,6 +34,7 @@
                             <th class="py-2 pr-4">Código</th>
                             <th class="py-2 pr-4">Documento</th>
                             <th class="py-2 pr-4">Archivo</th>
+                            <th class="py-2 pr-4">Subido el</th>
                             <th class="py-2 pr-4">Estado</th>
                             <th class="py-2 pr-4">Acción</th>
                         </tr>
@@ -66,6 +67,9 @@
                                     @else
                                         <span class="text-sm text-gray-400">—</span>
                                     @endif
+                                </td>
+                                <td class="py-3 pr-4 text-sm text-gray-600 whitespace-nowrap">
+                                    {{ $subido?->updated_at?->format('d/m/Y H:i') ?? '—' }}
                                 </td>
                                 <td class="py-3 pr-4">
                                     <span class="estado-badge px-2 py-1 rounded-full text-xs font-semibold {{ $colores[$estado] }}">
@@ -125,13 +129,34 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     document.querySelectorAll('.btn-rechazar').forEach(function (btn) {
-        btn.addEventListener('click', function () {
+        btn.addEventListener('click', async function () {
             const id = btn.dataset.certificado;
-            const motivo = prompt('Motivo del rechazo (el estudiante lo va a ver):');
-            if (!motivo || motivo.trim().length < 5) {
-                alert('Escribí un motivo de al menos 5 caracteres.');
+            const resultado = await Swal.fire({
+                icon: 'warning',
+                title: 'Rechazar documento',
+                text: 'El estudiante podrá ver este motivo.',
+                input: 'textarea',
+                inputLabel: 'Motivo del rechazo',
+                inputPlaceholder: 'Escribe el motivo...',
+                inputAttributes: { 'aria-label': 'Motivo del rechazo' },
+                showCancelButton: true,
+                confirmButtonText: 'Rechazar documento',
+                cancelButtonText: 'Cancelar',
+                confirmButtonColor: '#B91C1C',
+                cancelButtonColor: '#6B7280',
+                reverseButtons: true,
+                inputValidator: (valor) => {
+                    if (!valor || valor.trim().length < 5) {
+                        return 'Escribe un motivo de al menos 5 caracteres.';
+                    }
+                }
+            });
+
+            if (!resultado.isConfirmed) {
                 return;
             }
+
+            const motivo = resultado.value.trim();
 
             fetch(`/api/certificados-estudiante/${id}/rechazar`, {
                 method: 'POST',

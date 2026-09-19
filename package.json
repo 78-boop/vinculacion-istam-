@@ -20,6 +20,8 @@
     },
     "dependencies": {
         "bootstrap": "^5.3.8",
-        "sass": "^1.104.0"
+        "flatpickr": "^4.6.13",
+        "sass": "^1.104.0",
+        "sweetalert2": "^11.26.25"
     }
 }

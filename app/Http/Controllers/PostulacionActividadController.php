@@ -66,4 +66,22 @@ class PostulacionActividadController extends Controller
 
         return back()->with('success', 'Elegiste la actividad. Queda pendiente de aprobación de tu docente.');
     }
+
+    // Estudiante: cancelar una actividad mientras siga pendiente de aprobación
+    public function cancelar(PostulacionActividad $postulacion)
+    {
+        $inscripcion = $postulacion->inscripcion;
+
+        if ($inscripcion->estudiante_id !== Auth::id()) {
+            abort(403);
+        }
+
+        if ($postulacion->estado !== 'pendiente') {
+            return back()->with('error', 'Solo puedes cancelar una actividad que todavía está pendiente de aprobación.');
+        }
+
+        $postulacion->delete();
+
+        return back()->with('success', 'Inscripción a la actividad cancelada correctamente.');
+    }
 }

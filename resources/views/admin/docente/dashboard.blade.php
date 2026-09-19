@@ -14,8 +14,8 @@
                     <a href="{{ route('docente.certificados.index') }}"
                        class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-white font-medium bg-blue-600 hover:bg-blue-700">
                         📄 Ver Certificados Pendientes
-                        @if(count($certificadosPendientes) > 0)
-                            <span class="bg-white text-blue-600 rounded-full px-2 py-0.5 text-xs font-bold">{{ count($certificadosPendientes) }}</span>
+                        @if($certificadosPendientes->total() > 0)
+                            <span class="bg-white text-blue-600 rounded-full px-2 py-0.5 text-xs font-bold">{{ $certificadosPendientes->total() }}</span>
                         @endif
                     </a>
                     <a href="{{ route('docente.postulaciones-actividad.index') }}"
@@ -35,7 +35,7 @@
                     <div class="flex items-center justify-between">
                         <div>
                             <p class="text-gray-500 text-sm font-medium">Certificados Pendientes</p>
-                            <p class="text-3xl font-bold text-gray-900">{{ count($certificadosPendientes) }}</p>
+                            <p class="text-3xl font-bold text-gray-900">{{ $certificadosPendientes->total() }}</p>
                         </div>
                         <div class="text-yellow-500 text-4xl">⏳</div>
                     </div>
@@ -86,9 +86,9 @@
                         <div class="flex-shrink-0 text-yellow-400 text-2xl">⚠️</div>
                         <div class="ml-3">
                             <p class="text-sm font-medium text-yellow-800">Por Revisar</p>
-                            <p class="text-2xl font-bold text-yellow-900 mt-2">{{ count($certificadosPendientes) }}</p>
+                            <p class="text-2xl font-bold text-yellow-900 mt-2">{{ $certificadosPendientes->total() }}</p>
                             <p class="text-sm text-yellow-700 mt-2">Certificados en espera de aprobación</p>
-                            @if(count($certificadosPendientes) > 0)
+                            @if($certificadosPendientes->total() > 0)
                                 <a href="{{ route('docente.certificados.index') }}" class="text-yellow-700 text-sm font-medium hover:underline inline-block mt-2">Revisar ahora →</a>
                             @endif
                         </div>
@@ -120,6 +120,7 @@
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estudiante</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Proyecto</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Documento</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Subido el</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
                             </tr>
                         </thead>
@@ -135,13 +136,16 @@
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
                                         {{ $certificado->tipoCertificado->codigo }} - {{ $certificado->tipoCertificado->nombre }}
                                     </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                                        {{ $certificado->updated_at?->format('d/m/Y H:i') ?? '—' }}
+                                    </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm">
                                         <a href="{{ route('docente.certificados.show', $certificado->inscripcion_id) }}" class="text-blue-600 hover:text-blue-900 font-medium">Revisar</a>
                                     </td>
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="4" class="px-6 py-8 text-center text-gray-500 text-sm">
+                                    <td colspan="5" class="px-6 py-8 text-center text-gray-500 text-sm">
                                         No hay certificados pendientes de aprobación
                                     </td>
                                 </tr>
@@ -149,6 +153,61 @@
                         </tbody>
                     </table>
                 </div>
+
+                @if($certificadosPendientes->hasPages())
+                    @php
+                        $paginaActual = $certificadosPendientes->currentPage();
+                        $ultimaPagina = $certificadosPendientes->lastPage();
+                        $paginas = collect([1, $ultimaPagina, $paginaActual - 1, $paginaActual, $paginaActual + 1])
+                            ->filter(fn ($pagina) => $pagina >= 1 && $pagina <= $ultimaPagina)
+                            ->unique()
+                            ->sort()
+                            ->values();
+                    @endphp
+
+                    <div class="px-6 py-5 border-t border-gray-200 bg-gray-50 flex justify-center">
+                        <nav class="flex items-center gap-2" aria-label="Paginación de certificados">
+                            @if($certificadosPendientes->onFirstPage())
+                                <span class="px-3 py-2 text-sm font-medium text-gray-400 bg-white border border-gray-200 rounded-lg cursor-not-allowed">
+                                    Anterior
+                                </span>
+                            @else
+                                <a href="{{ $certificadosPendientes->previousPageUrl() }}" class="px-3 py-2 text-sm font-medium text-green-900 bg-white border border-gray-200 rounded-lg hover:bg-green-50">
+                                    Anterior
+                                </a>
+                            @endif
+
+                            @php $paginaAnterior = null; @endphp
+                            @foreach($paginas as $pagina)
+                                @if($paginaAnterior !== null && $pagina > $paginaAnterior + 1)
+                                    <span class="px-2 py-2 text-sm font-medium text-green-900">...</span>
+                                @endif
+
+                                @if($pagina === $paginaActual)
+                                    <span class="px-3 py-2 text-sm font-bold text-green-900 bg-white border-2 border-green-900 rounded-lg" aria-current="page">
+                                        {{ $pagina }}
+                                    </span>
+                                @else
+                                    <a href="{{ $certificadosPendientes->url($pagina) }}" class="px-3 py-2 text-sm font-medium text-green-900 bg-white border border-gray-200 rounded-lg hover:bg-green-50">
+                                        {{ $pagina }}
+                                    </a>
+                                @endif
+
+                                @php $paginaAnterior = $pagina; @endphp
+                            @endforeach
+
+                            @if($certificadosPendientes->hasMorePages())
+                                <a href="{{ $certificadosPendientes->nextPageUrl() }}" class="px-3 py-2 text-sm font-medium text-green-900 bg-white border border-gray-200 rounded-lg hover:bg-green-50">
+                                    Siguiente
+                                </a>
+                            @else
+                                <span class="px-3 py-2 text-sm font-medium text-gray-400 bg-white border border-gray-200 rounded-lg cursor-not-allowed">
+                                    Siguiente
+                                </span>
+                            @endif
+                        </nav>
+                    </div>
+                @endif
             </div>
 
             <!-- Sección: Mis Proyectos -->

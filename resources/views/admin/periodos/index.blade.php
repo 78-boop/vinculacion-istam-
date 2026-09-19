@@ -26,7 +26,7 @@
                     <!-- Acciones -->
                     <div class="flex items-center gap-4 shrink-0">
                         <a href="{{ route('admin.periodos.edit', $periodo) }}" class="text-blue-600 hover:text-blue-800 text-sm font-medium">Editar</a>
-                        <form action="{{ route('admin.periodos.destroy', $periodo) }}" method="POST" onsubmit="return confirm('¿Eliminar este periodo?')">
+                        <form action="{{ route('admin.periodos.destroy', $periodo) }}" method="POST" data-confirm-title="¿Eliminar este periodo?" data-confirm-text="Esta acción no se puede deshacer.">
                             @csrf
                             @method('DELETE')
                             <button type="submit" class="text-red-600 hover:text-red-800 text-sm font-medium">Eliminar</button>

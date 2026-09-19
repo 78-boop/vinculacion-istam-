@@ -19,13 +19,11 @@ class DashboardController extends Controller
         if ($user->role === 'admin') {
             return $this->dashboardAdministrador();
         } elseif ($user->role === 'estudiante') {
-                return $this->dashboardEstudiante();
+            return $this->dashboardEstudiante();
         } elseif ($user->role === 'docente') {
             return $this->dashboardDocente();
         }
 
-        // Rol sin panel asignado todavía (ej. 'coordinador'): mostramos un
-        // aviso en vez de redirigir, para no caer en un bucle de redirects.
         abort(403, 'Tu cuenta (rol "' . $user->role . '") todavía no tiene un panel asignado. Contacta a un administrador.');
     }
 
@@ -38,7 +36,7 @@ class DashboardController extends Controller
         $actividadesPendientes = Actividad::where('estado', 'pendiente')->count();
         $horasTotales = Actividad::where('estado', 'aprobada')->sum('horas');
 
-        $ultimasActividades = Actividad::with(['inscripcion.estudiante', 'inscripcion.proyecto'])
+        $ultimasActividades = Actividad::with(['inscripcion.estudiante', 'inscripcion.proyecto', 'proyecto', 'inscripciones.estudiante'])
             ->latest('created_at')
             ->limit(5)
             ->get();
@@ -77,65 +75,59 @@ class DashboardController extends Controller
     }
 
     private function dashboardEstudiante()
-{
-    $user = Auth::user();
+    {
+        $user = Auth::user();
 
-    $inscripciones = Inscripcion::where('estudiante_id', $user->id)
-        ->with(['proyecto.docente', 'postulacionesActividad.actividad.carrera'])
-        ->get();
+        $inscripciones = Inscripcion::where('estudiante_id', $user->id)
+            ->with(['proyecto.docente', 'postulacionesActividad.actividad.carrera'])
+            ->get();
 
-    $certificadosEstudiante = \App\Models\CertificadoEstudiante::whereIn('inscripcion_id', $inscripciones->pluck('id'))
-        ->with(['inscripcion.proyecto', 'tipoCertificado'])
-        ->latest('updated_at')
-        ->get();
+        $certificadosEstudiante = \App\Models\CertificadoEstudiante::whereIn('inscripcion_id', $inscripciones->pluck('id'))
+            ->with(['inscripcion.proyecto', 'tipoCertificado'])
+            ->latest('updated_at')
+            ->get();
 
-    $inscripcionIds = $inscripciones->pluck('proyecto_vinculacion_id')->toArray();
-    $proyectosDisponibles = ProyectoVinculacion::whereNotIn('id', $inscripcionIds)
-        ->where('estado', 'aprobado')
-        ->with('docente')
-        ->get();
+        $inscripcionIds = $inscripciones->pluck('proyecto_vinculacion_id')->toArray();
+        $proyectosDisponibles = ProyectoVinculacion::whereNotIn('id', $inscripcionIds)
+            ->where('estado', 'aprobado')
+            ->with('docente')
+            ->get();
 
-    $totalTipos = \App\Models\TipoCertificado::where('activo', true)->count();
-    $certificadosAprobados = $certificadosEstudiante->where('estado', 'aprobado')->count();
-    $certificadosPendientes = $certificadosEstudiante->where('estado', 'pendiente')->count();
-    $certificadosRechazados = $certificadosEstudiante->where('estado', 'rechazado')->count();
+        $totalTipos = \App\Models\TipoCertificado::where('activo', true)->count();
+        $certificadosAprobados = $certificadosEstudiante->where('estado', 'aprobado')->count();
+        $certificadosPendientes = $certificadosEstudiante->where('estado', 'pendiente')->count();
+        $certificadosRechazados = $certificadosEstudiante->where('estado', 'rechazado')->count();
 
-    $ultimosCertificados = $certificadosEstudiante->take(5);
+        $ultimosCertificados = $certificadosEstudiante->take(5);
 
-    // Actividades de Vinculación: la que está aprobada (la que va a desarrollar)
-    // y todas las postulaciones aprobadas por si tiene más de una inscripción.
-    $todasPostulaciones = $inscripciones->flatMap->postulacionesActividad;
-    $actividadesAprobadas = $todasPostulaciones->where('estado', 'aprobada');
-    $actividadPendiente = $todasPostulaciones->where('estado', 'pendiente')->first();
+        $todasPostulaciones = $inscripciones->flatMap->postulacionesActividad;
+        $actividadesAprobadas = $todasPostulaciones->where('estado', 'aprobada');
+        $actividadPendiente = $todasPostulaciones->where('estado', 'pendiente')->first();
 
-    return view('admin.estudiante.dashboard', compact(
-        'inscripciones',
-        'totalTipos',
-        'certificadosAprobados',
-        'certificadosPendientes',
-        'certificadosRechazados',
-        'ultimosCertificados',
-        'proyectosDisponibles',
-        'actividadesAprobadas',
-        'actividadPendiente'
-    ));
-}
+        return view('admin.estudiante.dashboard', compact(
+            'inscripciones',
+            'totalTipos',
+            'certificadosAprobados',
+            'certificadosPendientes',
+            'certificadosRechazados',
+            'ultimosCertificados',
+            'proyectosDisponibles',
+            'actividadesAprobadas',
+            'actividadPendiente'
+        ));
+    }
 
     private function dashboardDocente()
     {
         $user = Auth::user();
 
-        // Las aprobaciones del docente ahora ocurren sobre CertificadoEstudiante
-        // (ver DocenteCertificadoController::index/show/aprobar/rechazar), ya
-        // no sobre RegistroHora. Este dashboard tiene que reflejar lo mismo.
         $certificadosPendientes = \App\Models\CertificadoEstudiante::where('estado', 'pendiente')
             ->whereHas('inscripcion.proyecto', function ($query) use ($user) {
                 $query->where('docente_id', $user->id);
             })
             ->with(['inscripcion.estudiante', 'inscripcion.proyecto', 'tipoCertificado'])
             ->latest('created_at')
-            ->limit(10)
-            ->get();
+            ->paginate(10);
 
         $certificadosAprobados = \App\Models\CertificadoEstudiante::where('estado', 'aprobado')
             ->whereHas('inscripcion.proyecto', function ($query) use ($user) {

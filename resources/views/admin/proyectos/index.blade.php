@@ -51,13 +51,13 @@
                                             @csrf
                                             <button type="submit" class="text-green-600">Aprobar</button>
                                         </form>
-                                        <form action="{{ route('admin.proyectos.rechazar', $proyecto) }}" method="POST" class="inline" onsubmit="return confirm('¿Rechazar esta propuesta?')">
+                                        <form action="{{ route('admin.proyectos.rechazar', $proyecto) }}" method="POST" class="inline" data-confirm-title="¿Rechazar esta propuesta?" data-confirm-text="La propuesta quedará rechazada.">
                                             @csrf
                                             <button type="submit" class="text-red-600">Rechazar</button>
                                         </form>
                                     @endif
                                     <a href="{{ route('admin.proyectos.edit', $proyecto) }}" class="text-blue-600">Editar</a>
-                                    <form action="{{ route('admin.proyectos.destroy', $proyecto) }}" method="POST" class="inline" onsubmit="return confirm('¿Eliminar este proyecto?')">
+                                    <form action="{{ route('admin.proyectos.destroy', $proyecto) }}" method="POST" class="inline" data-confirm-title="¿Eliminar este proyecto?" data-confirm-text="Esta acción no se puede deshacer.">
                                         @csrf
                                         @method('DELETE')
                                         <button type="submit" class="text-red-600">Eliminar</button>

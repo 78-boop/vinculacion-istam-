@@ -23,6 +23,7 @@ class User extends Authenticatable
         'cedula',
         'carrera_id',
         'email',
+        'profile_photo_path',
         'password',
         'role',
     ];

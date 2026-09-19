@@ -88,8 +88,8 @@
             Que el(la) Sr(ta). <strong>{{ strtoupper($estudiante->name) }}</strong>, con cédula de identidad
             <strong>{{ $estudiante->cedula }}</strong>, ha participado en el Proyecto de Vinculación con la
             Sociedad denominado <strong>{{ $proyecto->nombre }}</strong>, en la cual ha cumplido un total de
-            <strong>{{ $horas }} horas</strong> de <strong>Vinculación con la Sociedad</strong>, según consta
-            en el sistema académico de la Institución.
+            <strong>{{ $horas }} horas</strong> de <strong>Vinculación con la Sociedad</strong>, en la actividad
+            <strong>{{ $actividadNombre }}</strong>, según consta en el sistema académico de la Institución.
         </p>
 
         <p class="fecha">Yantzaza, {{ $fecha->translatedFormat('d \\d\\e F \\d\\e\\l Y') }}</p>
