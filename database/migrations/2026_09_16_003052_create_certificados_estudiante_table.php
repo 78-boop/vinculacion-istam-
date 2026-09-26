@@ -23,7 +23,7 @@ return new class extends Migration
 
                 // Un estudiante sube UN archivo por tipo de certificado por inscripción.
                 // Si lo rechazan, se actualiza esta misma fila (no se duplica).
-                $table->unique(['inscripcion_id', 'tipo_certificado_id']);
+                $table->unique(['inscripcion_id', 'tipo_certificado_id'], 'cert_est_insc_tipo_unique');
             });
         }
     }
