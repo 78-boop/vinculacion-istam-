@@ -13,8 +13,12 @@
 </div>
 
 <div>
-    <label for="orden" class="block text-sm font-medium text-gray-700">Orden de aparición</label>
-    <input id="orden" name="orden" type="number" min="0" max="255" value="{{ old('orden', $tipo?->orden ?? 0) }}" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+    <label for="orden" class="block text-sm font-medium text-gray-700">Posición en la lista de documentos</label>
+    <input id="orden" name="orden" type="number" min="0" max="255" value="{{ old('orden', $tipo?->orden ?? ($siguienteOrden ?? 1)) }}" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+    <p class="mt-1 text-xs text-gray-500">
+        Indica en qué lugar aparecerá este documento en la lista que ven el estudiante y el docente.
+        Por ejemplo: <strong>1</strong> = primero, <strong>2</strong> = segundo, y así sucesivamente.
+    </p>
     @error('orden') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
 </div>
 

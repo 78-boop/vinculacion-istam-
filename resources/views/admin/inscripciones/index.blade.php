@@ -1,59 +1,68 @@
+@php
+    $estados = ['activo' => 'verde', 'completado' => 'verde', 'retirado' => 'gris'];
+@endphp
+
 <x-app-layout>
-
-    <div class="py-8">
-        <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-
-            @if (session('success'))
-                <div class="mb-4 p-4 bg-green-100 text-green-700 rounded">
-                    {{ session('success') }}
-                </div>
-            @endif
-
-            <div class="mb-4">
-                <a href="{{ route('admin.inscripciones.create') }}" class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700">
-                    + Nueva Inscripción
+    <div class="ui-wrap">
+        <x-ui.hero etiqueta="Personas" titulo="Inscripciones"
+                   :subtitulo="$inscripciones->count() . ' inscripciones de estudiantes en proyectos'">
+            <x-slot:acciones>
+                <a href="{{ route('admin.inscripciones.create') }}" class="ui-btn ui-btn-blanco">
+                    <svg fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path stroke-linecap="round" d="M12 5v14M5 12h14"/></svg>
+                    Nueva inscripción
                 </a>
-            </div>
+            </x-slot:acciones>
+        </x-ui.hero>
 
-            <div class="bg-white shadow rounded-lg overflow-hidden">
-                <div class="overflow-x-auto">
-                <table class="w-full text-left">
-                    <thead class="bg-gray-100">
-                        <tr>
-                            <th class="p-3">Estudiante</th>
-                            <th class="p-3">Proyecto</th>
-                            <th class="p-3">Fecha inscripción</th>
-                            <th class="p-3">Horas cumplidas</th>
-                            <th class="p-3">Estado</th>
-                            <th class="p-3">Acciones</th>
-                        </tr>
+        <section class="ui-panel">
+            <div class="ui-tabla-wrap">
+                <table class="ui-tabla">
+                    <thead>
+                        <tr><th>Estudiante</th><th>Proyecto</th><th>Inscrito el</th><th>Horas cumplidas</th><th>Estado</th><th style="text-align:right">Acciones</th></tr>
                     </thead>
                     <tbody>
                         @forelse ($inscripciones as $inscripcion)
-                            <tr class="border-t">
-                                <td class="p-3">{{ $inscripcion->estudiante->name ?? 'Sin asignar' }}</td>
-                                <td class="p-3">{{ $inscripcion->proyecto->nombre ?? '—' }}</td>
-                                <td class="p-3">{{ $inscripcion->fecha_inscripcion }}</td>
-                                <td class="p-3">{{ $inscripcion->horas_cumplidas }}</td>
-                                <td class="p-3 capitalize">{{ $inscripcion->estado }}</td>
-                                <td class="p-3 space-x-2">
-                                    <a href="{{ route('admin.inscripciones.edit', $inscripcion) }}" class="text-blue-600">Editar</a>
-                                    <form action="{{ route('admin.inscripciones.destroy', $inscripcion) }}" method="POST" class="inline" data-confirm-title="¿Eliminar esta inscripción?" data-confirm-text="Esta acción no se puede deshacer.">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="text-red-600">Eliminar</button>
-                                    </form>
+                            @php
+                                $nombreEst = $inscripcion->estudiante->name ?? 'Sin asignar';
+                                $ini = mb_strtoupper(collect(preg_split('/\s+/', $nombreEst))->take(2)->map(fn ($p) => mb_substr($p, 0, 1))->implode(''));
+                            @endphp
+                            <tr>
+                                <td>
+                                    <div class="ui-celda">
+                                        <span class="ui-avatar">{{ $ini }}</span>
+                                        <div style="min-width:0">
+                                            <strong>{{ $nombreEst }}</strong>
+                                            <small>{{ $inscripcion->estudiante->email ?? '' }}</small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>{{ $inscripcion->proyecto->nombre ?? '—' }}</td>
+                                <td style="white-space:nowrap">{{ $inscripcion->fecha_inscripcion ? \Carbon\Carbon::parse($inscripcion->fecha_inscripcion)->format('d/m/Y') : '—' }}</td>
+                                <td class="ui-num">{{ $inscripcion->horas_cumplidas }} h</td>
+                                <td><span class="ui-tag {{ $estados[$inscripcion->estado] ?? 'gris' }}">{{ ucfirst($inscripcion->estado) }}</span></td>
+                                <td>
+                                    <div class="ui-acciones">
+                                        <a href="{{ route('admin.inscripciones.edit', $inscripcion) }}" class="ui-btn ui-btn-suave ui-btn-sm">Editar</a>
+                                        <form action="{{ route('admin.inscripciones.destroy', $inscripcion) }}" method="POST"
+                                              data-confirm-title="¿Eliminar la inscripción de {{ $nombreEst }}?" data-confirm-text="Esta acción no se puede deshacer.">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="ui-btn ui-btn-peligro ui-btn-sm">Eliminar</button>
+                                        </form>
+                                    </div>
                                 </td>
                             </tr>
                         @empty
-                            <tr>
-                                <td colspan="6" class="p-3 text-center text-gray-500">No hay inscripciones registradas.</td>
-                            </tr>
+                            <tr><td colspan="6">
+                                <div class="ui-vacio">
+                                    <strong>Aún no hay inscripciones</strong>
+                                    Los estudiantes quedan inscritos al elegir una actividad, o puedes inscribirlos tú.
+                                </div>
+                            </td></tr>
                         @endforelse
                     </tbody>
                 </table>
-                </div>
             </div>
-        </div>
+        </section>
     </div>
 </x-app-layout>

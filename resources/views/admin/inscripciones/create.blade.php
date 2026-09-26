@@ -1,14 +1,11 @@
 <x-app-layout>
-    <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            Nueva Inscripción
-        </h2>
-    </x-slot>
 
-    <div class="py-8">
-        <div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="bg-white shadow rounded-lg p-6">
-                <form action="{{ route('admin.inscripciones.store') }}" method="POST">
+    <div>
+        <div class="ui-wrap" style="max-width: 860px;">
+            <x-ui.hero :volver="route('admin.inscripciones.index')" volver-texto="Inscripciones" titulo="Nueva inscripción" subtitulo="Inscribe a un estudiante en un proyecto de vinculación." />
+
+            <div class="bg-white shadow rounded-lg p-6 sm:p-8">
+                <form action="{{ route('admin.inscripciones.store') }}" method="POST" data-confirm-title="¿Guardar este registro?" data-confirm-text="Revisa que los datos sean correctos." data-confirm-button="Sí, guardar">
                     @csrf
 
                     <div class="mb-4">
@@ -60,8 +57,11 @@
                     </div>
 
                     <div class="flex flex-col sm:flex-row justify-end gap-2">
-                        <a href="{{ route('admin.inscripciones.index') }}" class="px-4 py-2 text-gray-600">Cancelar</a>
-                        <button type="submit" class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700">Guardar</button>
+                        <a href="{{ route('admin.inscripciones.index') }}" class="ui-btn ui-btn-suave">Cancelar</a>
+                        <button type="submit" class="ui-btn ui-btn-primario">
+                            <svg fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m5 13 4 4L19 7"/></svg>
+                            Guardar
+                        </button>
                     </div>
                 </form>
             </div>

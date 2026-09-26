@@ -18,7 +18,7 @@ class CertificadoEstudianteController extends Controller
 
         // Traemos las inscripciones del estudiante junto con lo que ya subió
         $inscripciones = $user->inscripciones()
-            ->with(['proyecto', 'certificadosEstudiante.tipoCertificado'])
+            ->with(['proyecto', 'certificadosEstudiante.tipoCertificado', 'certificadoAdministrativo'])
             ->get();
 
         // Catálogo completo y ordenado (para pintar las 8 filas aunque no haya subido nada aún)

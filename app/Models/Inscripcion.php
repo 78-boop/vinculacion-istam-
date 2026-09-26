@@ -55,6 +55,11 @@ class Inscripcion extends Model
         return $this->hasMany(CertificadoEstudiante::class);
     }
 
+    public function certificadosVigentes()
+    {
+        return $this->hasMany(CertificadoEstudiante::class)->vigentes();
+    }
+
     public function certificadoAdministrativo()
     {
         return $this->hasOne(CertificadoAdministrativo::class);
@@ -65,11 +70,32 @@ class Inscripcion extends Model
         return $this->hasMany(PostulacionActividad::class);
     }
 
+    // Actividades (creadas por el administrador) en las que participa esta inscripción
+    public function actividadesAsignadas()
+    {
+        return $this->belongsToMany(Actividad::class, 'actividad_inscripcion');
+    }
+
+    // Inscripciones que le corresponden a un docente: las de los proyectos que dirige
+    // y las de las actividades de las que el administrador lo hizo responsable
+    public function scopeDelDocente($query, int $docenteId)
+    {
+        return $query->where(function ($q) use ($docenteId) {
+            $q->whereHas('proyecto', fn ($p) => $p->where('docente_id', $docenteId))
+                ->orWhereHas('actividadesAsignadas', fn ($a) => $a->where('actividades.docente_id', $docenteId));
+        });
+    }
+
+    public function esDelDocente(int $docenteId): bool
+    {
+        return static::whereKey($this->getKey())->delDocente($docenteId)->exists();
+    }
+
     // ¿Ya subió y aprobó los 8 documentos requeridos?
     public function todosCertificadosAprobados()
     {
         $totalActivos = TipoCertificado::where('activo', true)->count();
-        $totalAprobados = $this->certificadosEstudiante()
+        $totalAprobados = $this->certificadosVigentes()
             ->where('estado', 'aprobado')
             ->count();
 

@@ -37,4 +37,10 @@ class CertificadoEstudiante extends Model
     {
         return $this->belongsTo(User::class, 'aprobado_por');
     }
+
+    // Solo documentos de tipos requeridos activos (los desactivados por el administrador no cuentan)
+    public function scopeVigentes($query)
+    {
+        return $query->whereHas('tipoCertificado', fn ($t) => $t->where('activo', true));
+    }
 }

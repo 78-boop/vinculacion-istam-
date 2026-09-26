@@ -1,62 +1,45 @@
 <x-app-layout>
+    <div class="ui-wrap" style="max-width: 820px;">
+        <x-ui.hero :volver="route('dashboard')" volver-texto="Mi panel" titulo="Proponer un proyecto"
+                   subtitulo="Tu propuesta quedará pendiente hasta que un administrador la revise y la apruebe." />
 
-    <div class="py-8">
-        <div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
-
-            <div class="mb-4 p-4 bg-blue-50 text-blue-700 rounded text-sm">
-                Tu propuesta quedará <strong>pendiente</strong> hasta que un administrador la revise y la apruebe.
+        <form action="{{ route('docente.proyectos.store') }}" method="POST" class="ui-panel"
+              data-confirm-title="¿Enviar la propuesta?" data-confirm-text="El administrador la revisará antes de publicarla." data-confirm-button="Sí, enviar">
+            @csrf
+            <div class="ui-panel-head">
+                <h3><span class="ui-chip-ico"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3a6 6 0 0 0-3.5 10.9V16h7v-2.1A6 6 0 0 0 12 3Zm-2 17h4"/></svg></span> Datos del proyecto</h3>
             </div>
-
-            <div class="bg-white shadow rounded-lg p-6">
-                <form action="{{ route('docente.proyectos.store') }}" method="POST">
-                    @csrf
-
-                    <div class="mb-6">
-                        <label class="block font-medium text-sm text-gray-700 mb-2">Nombre del proyecto</label>
-                        <input type="text" name="nombre" value="{{ old('nombre') }}"
-                               class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm px-3 py-2 focus:outline-none focus:border-indigo-500" required>
-                        @error('nombre')
-                            <span class="text-red-600 text-sm">{{ $message }}</span>
-                        @enderror
+            <div class="ui-panel-body">
+                <div class="ui-form-grid">
+                    <div class="ui-campo completo">
+                        <label for="nombre">Nombre del proyecto</label>
+                        <input id="nombre" type="text" name="nombre" value="{{ old('nombre') }}" required class="ui-input @error('nombre') is-invalido @enderror" placeholder="Ej: Alfabetización digital comunitaria">
+                        @error('nombre') <span class="error">{{ $message }}</span> @enderror
                     </div>
-
-                    <div class="mb-6">
-                        <label class="block font-medium text-sm text-gray-700 mb-2">Descripción</label>
-                        <textarea name="descripcion" rows="4"
-                                  class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm px-3 py-2 focus:outline-none focus:border-indigo-500" required>{{ old('descripcion') }}</textarea>
-                        @error('descripcion')
-                            <span class="text-red-600 text-sm">{{ $message }}</span>
-                        @enderror
+                    <div class="ui-campo completo">
+                        <label for="descripcion">Descripción</label>
+                        <textarea id="descripcion" name="descripcion" rows="5" required class="ui-input @error('descripcion') is-invalido @enderror" placeholder="¿Qué se hará, con quién y qué se espera lograr?">{{ old('descripcion') }}</textarea>
+                        @error('descripcion') <span class="error">{{ $message }}</span> @enderror
                     </div>
-
-                    <div class="mb-6">
-                        <label class="block font-medium text-sm text-gray-700 mb-2">Período Académico</label>
-                        <select name="periodo_academico_id"
-                                class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm px-3 py-2 focus:outline-none focus:border-indigo-500" required>
-                            <option value="">-- Seleccione un período --</option>
+                    <div class="ui-campo completo">
+                        <label for="periodo_academico_id">Período académico</label>
+                        <select id="periodo_academico_id" name="periodo_academico_id" required class="ui-input @error('periodo_academico_id') is-invalido @enderror">
+                            <option value="">Selecciona un período</option>
                             @foreach ($periodos as $periodo)
-                                <option value="{{ $periodo->id }}" {{ old('periodo_academico_id') == $periodo->id ? 'selected' : '' }}>
-                                    {{ $periodo->nombre }}
-                                </option>
+                                <option value="{{ $periodo->id }}" @selected(old('periodo_academico_id') == $periodo->id)>{{ $periodo->nombre }}</option>
                             @endforeach
                         </select>
-                        @error('periodo_academico_id')
-                            <span class="text-red-600 text-sm">{{ $message }}</span>
-                        @enderror
+                        @error('periodo_academico_id') <span class="error">{{ $message }}</span> @enderror
                     </div>
-
-                    <div class="flex gap-4">
-                        <button type="submit" class="px-6 py-2 rounded-lg text-white font-medium hover:opacity-90"
-                                style="background-color: #006B47;">
-                            Enviar Propuesta
-                        </button>
-                        <a href="{{ route('dashboard') }}"
-                           class="px-6 py-2 rounded-lg text-gray-700 font-medium border border-gray-300 hover:bg-gray-50">
-                            Cancelar
-                        </a>
-                    </div>
-                </form>
+                </div>
+                <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:24px;padding-top:20px;border-top:1px solid var(--ui-borde);flex-wrap:wrap">
+                    <a href="{{ route('dashboard') }}" class="ui-btn ui-btn-suave">Cancelar</a>
+                    <button type="submit" class="ui-btn ui-btn-primario">
+                        <svg fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 12h13m-6-7 7 7-7 7"/></svg>
+                        Enviar propuesta
+                    </button>
+                </div>
             </div>
-        </div>
+        </form>
     </div>
 </x-app-layout>

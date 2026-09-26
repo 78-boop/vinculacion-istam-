@@ -1,67 +1,82 @@
+@php
+    $hoy = \Carbon\Carbon::today();
+    $formatoHoras = fn ($h) => rtrim(rtrim(number_format((float) $h, 2), '0'), '.');
+@endphp
+
 <x-app-layout>
-
-    <div class="py-8">
-        <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-
-            @if (session('success'))
-                <div class="mb-4 p-4 bg-green-100 text-green-700 rounded">
-                    {{ session('success') }}
-                </div>
-            @endif
-
-            <div class="mb-4">
-                <a href="{{ route('admin.actividades.create') }}" class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700">
-                    + Nueva Actividad
+    <div class="ui-wrap">
+        <x-ui.hero etiqueta="Gestión académica" titulo="Actividades"
+                   :subtitulo="$actividades->count() . ' actividades registradas. Los estudiantes se inscriben desde «Proyectos disponibles».'">
+            <x-slot:acciones>
+                <a href="{{ route('admin.actividades.create') }}" class="ui-btn ui-btn-blanco">
+                    <svg fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path stroke-linecap="round" d="M12 5v14M5 12h14"/></svg>
+                    Nueva actividad
                 </a>
-            </div>
+            </x-slot:acciones>
+        </x-ui.hero>
 
-            <div class="bg-white shadow rounded-lg overflow-hidden">
-                <div class="overflow-x-auto">
-                <table class="w-full text-left">
-                    <thead class="bg-gray-100">
-                        <tr>
-                            <th class="p-3">Proyecto</th>
-                            <th class="p-3">Docente</th>
-                            <th class="p-3">Estudiantes</th>
-                            <th class="p-3">Inicio</th>
-                            <th class="p-3">Finalización</th>
-                            <th class="p-3">Lugar</th>
-                            <th class="p-3">Horas</th>
-                            <th class="p-3">Estado</th>
-                            <th class="p-3">Acciones</th>
-                        </tr>
+        <section class="ui-panel">
+            <div class="ui-tabla-wrap">
+                <table class="ui-tabla">
+                    <thead>
+                        <tr><th>Actividad</th><th>Docente</th><th>Estudiantes</th><th>Fechas</th><th>Horas</th><th>Estado</th><th style="text-align:right">Acciones</th></tr>
                     </thead>
                     <tbody>
                         @forelse ($actividades as $actividad)
-                            <tr class="border-t">
-                                <td class="p-3">{{ $actividad->proyecto->nombre ?? $actividad->inscripcion->proyecto->nombre ?? '—' }}</td>
-                                <td class="p-3">{{ $actividad->docente->name ?? '—' }}</td>
-                                <td class="p-3 text-sm">
-                                    {{ $actividad->inscripciones->pluck('estudiante.name')->filter()->join(', ') ?: ($actividad->inscripcion->estudiante->name ?? '—') }}
+                            @php
+                                $inicio = $actividad->fecha_inicio ?? $actividad->fecha;
+                                $fin = $actividad->fecha_finalizacion;
+                                $estudiantes = $actividad->inscripciones->pluck('estudiante.name')->filter();
+                                if ($estudiantes->isEmpty() && $actividad->inscripcion?->estudiante) $estudiantes = collect([$actividad->inscripcion->estudiante->name]);
+                            @endphp
+                            <tr>
+                                <td>
+                                    <div class="ui-celda">
+                                        <span class="ui-celda-ini">{{ $inicio?->format('d') ?? '—' }}</span>
+                                        <div style="min-width:0">
+                                            <strong>{{ $actividad->proyecto->nombre ?? $actividad->inscripcion->proyecto->nombre ?? '—' }}</strong>
+                                            <small>{{ $actividad->lugar ?: 'Sin lugar' }}</small>
+                                        </div>
+                                    </div>
                                 </td>
-                                <td class="p-3">{{ $actividad->fecha_inicio?->format('d/m/Y') ?? $actividad->fecha?->format('d/m/Y') ?? '—' }}</td>
-                                <td class="p-3">{{ $actividad->fecha_finalizacion?->format('d/m/Y') ?? '—' }}</td>
-                                <td class="p-3">{{ $actividad->lugar ?? '—' }}</td>
-                                <td class="p-3">{{ $actividad->horas }}</td>
-                                <td class="p-3 capitalize">{{ $actividad->estado }}</td>
-                                <td class="p-3 space-x-2">
-                                    <a href="{{ route('admin.actividades.edit', $actividad) }}" class="text-blue-600">Editar</a>
-                                    <form action="{{ route('admin.actividades.destroy', $actividad) }}" method="POST" class="inline" data-confirm-title="¿Eliminar esta actividad?" data-confirm-text="Esta acción no se puede deshacer.">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="text-red-600">Eliminar</button>
-                                    </form>
+                                <td>{{ $actividad->docente->name ?? '—' }}</td>
+                                <td>
+                                    @if ($estudiantes->isNotEmpty())
+                                        <span class="ui-tag gris" title="{{ $estudiantes->join(', ') }}">{{ $estudiantes->count() }} {{ $estudiantes->count() === 1 ? 'estudiante' : 'estudiantes' }}</span>
+                                        <small style="display:block;margin-top:4px;color:var(--ui-texto-3);font-size:12px">{{ \Illuminate\Support\Str::limit($estudiantes->join(', '), 40) }}</small>
+                                    @else
+                                        <span style="color:var(--ui-texto-3)">Sin inscritos</span>
+                                    @endif
+                                </td>
+                                <td style="white-space:nowrap">{{ $inicio?->format('d/m/Y') ?? '—' }}<br><small style="color:var(--ui-texto-3)">hasta {{ $fin?->format('d/m/Y') ?? '—' }}</small></td>
+                                <td class="ui-num">{{ $formatoHoras($actividad->horas) }} h</td>
+                                <td>
+                                    <span class="ui-tag {{ $actividad->estado === 'aprobada' ? 'verde' : 'ambar' }}">{{ ucfirst($actividad->estado) }}</span>
+                                    @if ($fin && $hoy->gt($fin)) <span class="ui-tag gris" style="margin-top:4px">Finalizada</span> @endif
+                                </td>
+                                <td>
+                                    <div class="ui-acciones">
+                                        <a href="{{ route('admin.actividades.edit', $actividad) }}" class="ui-btn ui-btn-suave ui-btn-sm">Editar</a>
+                                        <form action="{{ route('admin.actividades.destroy', $actividad) }}" method="POST"
+                                              data-confirm-title="¿Eliminar esta actividad?" data-confirm-text="Los estudiantes inscritos dejarán de verla. Esta acción no se puede deshacer.">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="ui-btn ui-btn-peligro ui-btn-sm">Eliminar</button>
+                                        </form>
+                                    </div>
                                 </td>
                             </tr>
                         @empty
-                            <tr>
-                                <td colspan="9" class="p-3 text-center text-gray-500">No hay actividades registradas.</td>
-                            </tr>
+                            <tr><td colspan="7">
+                                <div class="ui-vacio">
+                                    <strong>Aún no hay actividades</strong>
+                                    <a href="{{ route('admin.actividades.create') }}" class="ui-btn ui-btn-primario ui-btn-sm" style="margin-top:10px">Crear la primera</a>
+                                </div>
+                            </td></tr>
                         @endforelse
                     </tbody>
                 </table>
-                </div>
             </div>
-        </div>
+        </section>
     </div>
 </x-app-layout>

@@ -19,7 +19,10 @@ class TipoCertificadoController extends Controller
 
     public function create(): View
     {
-        return view('admin.tipos-certificado.create');
+        // Se propone la siguiente posición libre en la lista
+        $siguienteOrden = (int) TipoCertificado::max('orden') + 1;
+
+        return view('admin.tipos-certificado.create', compact('siguienteOrden'));
     }
 
     public function store(Request $request): RedirectResponse

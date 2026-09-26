@@ -1,16 +1,12 @@
 <x-app-layout>
-    <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            Editar Usuario
-        </h2>
-    </x-slot>
 
-    <div class="py-8">
-        <div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="bg-white shadow rounded-lg p-6">
-                <form action="{{ route('admin.usuarios.update', $usuario) }}" method="POST">
-                        <p class="text-xs text-gray-500 mt-1">Déjalo en blanco para mantener la contraseña actual.</p>
-                        <p class="text-xs text-gray-500 mt-1">Si la cambias: mínimo 8 caracteres, con mayúscula, minúscula, número y símbolo.</p>
+    <div>
+        <div class="ui-wrap" style="max-width: 860px;">
+            <x-ui.hero :volver="route('admin.usuarios.index')" volver-texto="Usuarios" titulo="Editar usuario" subtitulo="Actualiza los datos y el rol del usuario." />
+
+            <div class="bg-white shadow rounded-lg p-6 sm:p-8">
+                <form action="{{ route('admin.usuarios.update', $usuario) }}" method="POST" data-confirm-title="¿Guardar los cambios?" data-confirm-text="Se actualizará la información." data-confirm-button="Sí, guardar">
+                    @csrf
                     @method('PUT')
 
                     <div class="mb-6">
@@ -55,7 +51,10 @@
                     </div>
 
                     <div class="mb-6">
-                        <label class="block font-medium text-sm text-gray-700 mb-2">Carrera</label>
+                        <div class="flex items-center justify-between mb-2">
+                            <label class="block font-medium text-sm text-gray-700">Carrera</label>
+                            <a href="{{ route('admin.carreras.create') }}" class="text-sm font-semibold" style="color:#006B47">+ Nueva carrera</a>
+                        </div>
                         <select name="carrera_id"
                                 class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm px-3 py-2 focus:outline-none focus:border-indigo-500">
                             <option value="">-- Sin carrera (solo aplica a estudiantes) --</option>
@@ -68,6 +67,8 @@
                         @error('carrera_id')
                             <span class="text-red-600 text-sm">{{ $message }}</span>
                         @enderror
+                    </div>
+
                     <div class="mb-6">
                         <label class="block font-medium text-sm text-gray-700 mb-2">Nueva contraseña</label>
                         <input type="password" name="password"
@@ -89,14 +90,12 @@
                     </div>
 
                     <div class="flex flex-col sm:flex-row gap-4">
-                        <button type="submit" class="px-6 py-2 rounded-lg text-white font-medium hover:opacity-90 order-1 sm:order-none"
-                                style="background-color: #006B47;">
+                        <button type="submit" class="ui-btn ui-btn-primario">
+                            <svg fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m5 13 4 4L19 7"/></svg>
                             Guardar Cambios
                         </button>
                         <a href="{{ route('admin.usuarios.index') }}"
-                           class="px-6 py-2 rounded-lg text-gray-700 font-medium border border-gray-300 hover:bg-gray-50">
-                            Cancelar
-                        </a>
+                           class="ui-btn ui-btn-suave">Cancelar</a>
                     </div>
                 </form>
             </div>

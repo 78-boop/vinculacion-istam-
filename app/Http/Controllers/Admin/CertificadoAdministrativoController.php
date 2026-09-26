@@ -5,119 +5,116 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\CertificadoAdministrativo;
 use App\Models\Inscripcion;
+use App\Models\TipoCertificado;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
-use Barryvdh\DomPDF\Facade\Pdf;
 
 class CertificadoAdministrativoController extends Controller
 {
-    // Admin: lista de estudiantes que ya completaron sus 8 documentos
+    // El "Gestor de Vinculación" es un cargo institucional fijo. Si cambia, se actualiza aquí.
+    private const GESTOR = 'Ing. Juan Carlos Guarinda Castillo';
+
+    // Admin: estudiantes que ya tienen todos sus documentos aprobados
     public function index()
     {
-        $inscripciones = Inscripcion::with(['estudiante', 'proyecto', 'certificadoAdministrativo'])
-            ->get()
-            ->filter(function ($inscripcion) {
-                return $inscripcion->todosCertificadosAprobados();
-            });
+        $totalTipos = TipoCertificado::where('activo', true)->count();
 
-        return view('admin.certificados.index', [
-            'inscripciones' => $inscripciones,
-        ]);
+        // Una sola consulta: cuenta los documentos aprobados de cada inscripción
+        $inscripciones = $totalTipos === 0 ? collect() : Inscripcion::with(['estudiante', 'proyecto', 'certificadoAdministrativo'])
+            ->withCount(['certificadosVigentes as aprobados_count' => fn ($q) => $q->where('estado', 'aprobado')])
+            ->get()
+            ->filter(fn ($inscripcion) => $inscripcion->aprobados_count >= $totalTipos)
+            ->values();
+
+        return view('admin.certificados.index', compact('inscripciones'));
     }
 
-    // Admin: generar el PDF autocompletado
+    // Admin: registra el certificado (rápido). El PDF y el Word se arman al descargar,
+    // siempre con la fecha del día de la descarga.
     public function generar(Inscripcion $inscripcion)
     {
-        if (!$inscripcion->todosCertificadosAprobados()) {
+        if (! $inscripcion->todosCertificadosAprobados()) {
             return redirect()->route('admin.certificados.index')
-                ->with('error', 'Este estudiante todavía no tiene los 8 documentos aprobados.');
+                ->with('error', 'Este estudiante todavía no tiene todos sus documentos aprobados.');
         }
 
         $estudiante = $inscripcion->estudiante;
-        $postulacion = $inscripcion->postulacionesActividad()
-            ->with('actividad')
-            ->where('estado', 'aprobada')
-            ->latest('updated_at')
-            ->first();
-        $actividadNombre = $postulacion?->actividad?->titulo ?? 'Actividad de Vinculación';
+        if ((int) $inscripcion->horas_cumplidas <= 0) {
+            return redirect()->route('admin.certificados.index')
+                ->with('aviso_titulo', 'Faltan las horas')
+                ->with('warning', 'El docente aún no registra las horas cumplidas de ' . $estudiante->name
+                    . '. El certificado se emite con esas horas, así que deben registrarse primero.');
+        }
 
         if (empty($estudiante->cedula)) {
             return redirect()->route('admin.usuarios.edit', $estudiante->id)
-                ->with('error', 'Este estudiante no tiene cédula registrada. Completala para poder generar el certificado.');
+                ->with('error', 'Este estudiante no tiene cédula registrada. Complétala para poder generar el certificado.');
         }
 
-        $admin = Auth::user();
-        $numeroCertificado = 'ADM-' . $inscripcion->id . '-' . now()->format('YmdHis');
-
-        // El "Gestor de Vinculación" es un cargo institucional fijo, no cambia
-        // según qué cuenta admin esté logueada. Si el gestor cambia algún día,
-        // se actualiza acá en un solo lugar.
-        $gestorNombre = 'Ing. Juan Carlos Guarinda Castillo';
-
-        $pdf = Pdf::loadView('pdf.certificado-administrativo', [
-            'estudiante' => $estudiante,
-            'inscripcion' => $inscripcion,
-            'proyecto' => $inscripcion->proyecto,
-            'actividadNombre' => $actividadNombre,
-            'horas' => $inscripcion->horas_requeridas ?? 0,
-            'gestorNombre' => $gestorNombre,
-            'numeroCertificado' => $numeroCertificado,
-            'fecha' => now(),
-        ]);
-
-        $rutaPdf = 'certificados_administrativos/certificado_' . $inscripcion->id . '.pdf';
-        Storage::disk('public')->put($rutaPdf, $pdf->output());
-
-        // Si ya existía uno para este estudiante, lo actualizamos en vez de duplicar
-        // (por ejemplo, si se corrigió la cédula y hay que regenerarlo).
         CertificadoAdministrativo::updateOrCreate(
             ['inscripcion_id' => $inscripcion->id],
             [
-                'numero_certificado' => $numeroCertificado,
+                'numero_certificado' => 'ADM-' . $inscripcion->id . '-' . now()->format('YmdHis'),
                 'fecha_generacion' => now()->format('Y-m-d'),
-                'generado_por' => $admin->id,
-                'ruta_pdf' => $rutaPdf,
+                'generado_por' => Auth::id(),
+                'ruta_pdf' => 'certificados_administrativos/certificado_' . $inscripcion->id . '.pdf',
             ]
         );
 
         return redirect()->route('admin.certificados.index')
-            ->with('success', 'Certificado generado correctamente para ' . $estudiante->name . '.');
+            ->with('success', 'Certificado de ' . $estudiante->name . ' listo. Ya puedes descargarlo en PDF o Word.');
     }
 
-    // Descargar el PDF ya generado
+    // Estudiante: descarga su propio certificado de vinculación (solo si el administrador ya lo emitió)
+    public function descargarEstudiante(CertificadoAdministrativo $certificado)
+    {
+        $this->autorizarEstudiante($certificado);
+
+        return $this->descargar($certificado);
+    }
+
+    public function descargarWordEstudiante(CertificadoAdministrativo $certificado)
+    {
+        $this->autorizarEstudiante($certificado);
+
+        return $this->descargarWord($certificado);
+    }
+
+    private function autorizarEstudiante(CertificadoAdministrativo $certificado): void
+    {
+        abort_unless($certificado->inscripcion?->estudiante_id === Auth::id(), 403, 'Este certificado no te pertenece.');
+    }
+
+    // Descargar PDF: se genera en el momento con la fecha de hoy
     public function descargar(CertificadoAdministrativo $certificado)
     {
-        if (!Storage::disk('public')->exists($certificado->ruta_pdf)) {
-            abort(404, 'El archivo ya no está disponible.');
-        }
+        $datos = $this->datos($certificado);
 
-        return Storage::disk('public')->download(
-            $certificado->ruta_pdf,
-            'Certificado-' . $certificado->numero_certificado . '.pdf'
-        );
+        $pdf = Pdf::loadView('pdf.certificado-administrativo', $datos)
+            ->setPaper('a4')
+            ->setOption('isFontSubsettingEnabled', true); // solo las letras usadas: archivo mucho más liviano
+
+        // Se guarda una copia actualizada como respaldo
+        Storage::disk('public')->put($certificado->ruta_pdf, $pdf->output());
+
+        return $pdf->download('Certificado-' . $certificado->numero_certificado . '.pdf');
     }
 
-    // Descargar una versión Word editable con los mismos datos del certificado.
+    // Descargar Word editable: misma información y fecha de hoy
     public function descargarWord(CertificadoAdministrativo $certificado)
     {
-        $inscripcion = $certificado->inscripcion()
-            ->with(['estudiante', 'proyecto'])
-            ->firstOrFail();
+        $datos = $this->datos($certificado);
 
-        $estudiante = $inscripcion->estudiante;
-        $proyecto = $inscripcion->proyecto;
-        $fecha = now()->locale('es')->translatedFormat('d \\d\\e F \\d\\e\\l Y');
         $plantilla = storage_path('app/templates/certificado-plantilla.docx');
-
-        if (!is_file($plantilla)) {
+        if (! is_file($plantilla)) {
             $plantilla = storage_path('app/templates/certificado-plantilla.docx.docx');
         }
-
-        if (!is_file($plantilla)) {
+        if (! is_file($plantilla)) {
             abort(404, 'No se encontró la plantilla Word del certificado.');
         }
 
-        $rutaWord = storage_path('app/certificado_' . $inscripcion->id . '_' . uniqid() . '.docx');
+        $rutaWord = storage_path('app/certificado_' . $certificado->inscripcion_id . '_' . uniqid() . '.docx');
         copy($plantilla, $rutaWord);
 
         $zip = new \ZipArchive();
@@ -125,63 +122,83 @@ class CertificadoAdministrativoController extends Controller
             abort(500, 'No se pudo abrir la plantilla Word.');
         }
 
-        $documentXml = $zip->getFromName('word/document.xml');
+        $xml = $zip->getFromName('word/document.xml');
+        $e = static fn (string $v): string => htmlspecialchars($v, ENT_XML1 | ENT_COMPAT, 'UTF-8');
+        $t = '<w:t\b[^>]*>';   // apertura de un fragmento de texto de Word
 
-        $escaparXml = static fn (string $valor): string => htmlspecialchars($valor, ENT_XML1 | ENT_COMPAT, 'UTF-8');
-
-        // La plantilla conserva cada dato en sus propios fragmentos de Word para no perder estilos.
-        $documentXml = preg_replace_callback(
-            '~(<w:t\b[^>]*>)ESTUDIANTE(</w:t>)~',
-            fn (array $coincidencia): string => $coincidencia[1] . $escaparXml(strtoupper($estudiante->name)) . $coincidencia[2],
-            $documentXml,
-            1
-        );
-        $documentXml = preg_replace_callback(
-            '~(identidad.*?<w:t\b[^>]*>)[0-9]{6,20}(</w:t>)~s',
-            fn (array $coincidencia): string => $coincidencia[1] . $escaparXml((string) $estudiante->cedula) . $coincidencia[2],
-            $documentXml,
-            1
-        );
-        $documentXml = preg_replace_callback(
-            '~(<w:t\b[^>]*>)Proyecto Test(</w:t>)~',
-            fn (array $coincidencia): string => $coincidencia[1] . $escaparXml($proyecto->nombre) . $coincidencia[2],
-            $documentXml,
-            1
-        );
-
-        // La fecha está separada en varios fragmentos; se reemplaza dentro de su párrafo conservando su formato.
-        $documentXml = preg_replace_callback(
-            '~<w:p\b[^>]*>.*?</w:p>~s',
-            function (array $coincidencia) use ($escaparXml, $fecha): string {
-                if (strpos($coincidencia[0], 'Yantzaza,') === false) {
-                    return $coincidencia[0];
+        // Reemplaza el texto capturado en el grupo indicado, conservando el resto (estilos de Word)
+        $cambiar = function (string $patron, int $grupo, string $valor) use (&$xml, $e) {
+            $xml = preg_replace_callback($patron, function ($m) use ($grupo, $valor, $e) {
+                $salida = '';
+                for ($i = 1; $i < count($m); $i++) {
+                    $salida .= $i === $grupo ? $e($valor) : $m[$i];
                 }
+                return $salida;
+            }, $xml, 1);
+        };
 
-                $primerFragmento = true;
+        // Cada dato está en su propio fragmento de Word: se reemplaza sin perder estilos (negritas, etc.)
+        $cambiar("~($t)(ESTUDIANTE)(</w:t>)~", 2, mb_strtoupper($datos['estudiante']->name));
+        $cambiar("~(identidad.*?$t)([0-9]{6,20})(</w:t>)~s", 2, (string) $datos['estudiante']->cedula);
 
-                return preg_replace_callback(
-                    '~(<w:t\b[^>]*>)(.*?)(</w:t>)~s',
-                    function (array $fragmento) use (&$primerFragmento, $escaparXml, $fecha): string {
-                        if ($primerFragmento) {
-                            $primerFragmento = false;
-                            return $fragmento[1] . $escaparXml('Yantzaza, ' . $fecha) . $fragmento[3];
-                        }
+        // "Proyecto" + " " + "Test" están en 3 fragmentos: el nombre va en el primero y se vacían los otros
+        $cambiar("~(denominado.*?$t)(Proyecto)(</w:t>.*?$t) (</w:t>.*?$t)Test(</w:t>)~s", 2, $datos['proyecto']->nombre);
 
-                        return $fragmento[1] . $fragmento[3];
-                    },
-                    $coincidencia[0]
-                );
-            },
-            $documentXml,
-            1
-        );
+        // Horas
+        $cambiar("~($t)(90)(</w:t>)(?=.*? horas)~s", 2, (string) $datos['horas']);
 
-        $zip->addFromString('word/document.xml', $documentXml);
+        // Número del certificado: "ADM-1-" + "20260919113638"
+        $cambiar("~($t)(ADM-[0-9]+-)(</w:t>.*?$t)[0-9]{8,20}(</w:t>)~s", 2, $certificado->numero_certificado);
+
+        // Fecha: está repartida en varios fragmentos dentro del párrafo "Yantzaza, ..."
+        $fecha = 'Yantzaza, ' . $datos['fecha']->translatedFormat('d \d\e F \d\e\l Y');
+        $xml = preg_replace_callback('~<w:p\b[^>]*>.*?</w:p>~s', function ($parrafo) use ($e, $fecha) {
+            if (! str_contains($parrafo[0], 'Yantzaza,')) {
+                return $parrafo[0];
+            }
+            $primero = true;
+
+            return preg_replace_callback('~(<w:t\b[^>]*>)(.*?)(</w:t>)~s', function ($f) use (&$primero, $e, $fecha) {
+                if ($primero) {
+                    $primero = false;
+                    return $f[1] . $e($fecha) . $f[3];
+                }
+                return $f[1] . $f[3];
+            }, $parrafo[0]);
+        }, $xml);
+
+        $zip->addFromString('word/document.xml', $xml);
         $zip->close();
 
-        return response()->download(
-            $rutaWord,
-            'Certificado-' . $certificado->numero_certificado . '.docx'
-        )->deleteFileAfterSend(true);
+        return response()->download($rutaWord, 'Certificado-' . $certificado->numero_certificado . '.docx')
+            ->deleteFileAfterSend(true);
+    }
+
+    // Datos del certificado, siempre con la fecha de hoy
+    private function datos(CertificadoAdministrativo $certificado): array
+    {
+        $inscripcion = $certificado->inscripcion()->with(['estudiante', 'proyecto'])->firstOrFail();
+
+        // Actividad real del estudiante (creada por el administrador); si no hay, la del catálogo antiguo
+        $actividad = $inscripcion->actividadesAsignadas()->latest('fecha_inicio')->first();
+        $postulacion = $actividad ? null : $inscripcion->postulacionesActividad()
+            ->with('actividad')
+            ->where('estado', 'aprobada')
+            ->latest('updated_at')
+            ->first();
+        $nombreActividad = $actividad
+            ? \Illuminate\Support\Str::limit(trim(preg_replace('/\s+/', ' ', $actividad->descripcion ?: $actividad->lugar ?: '')), 90)
+            : $postulacion?->actividad?->titulo;
+
+        return [
+            'estudiante' => $inscripcion->estudiante,
+            'inscripcion' => $inscripcion,
+            'proyecto' => $inscripcion->proyecto,
+            'actividadNombre' => $nombreActividad ?: 'Actividad de Vinculación',
+            'horas' => (int) $inscripcion->horas_cumplidas, // horas que registra el docente
+            'gestorNombre' => self::GESTOR,
+            'numeroCertificado' => $certificado->numero_certificado,
+            'fecha' => now()->locale('es'),
+        ];
     }
 }

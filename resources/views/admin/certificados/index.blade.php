@@ -1,73 +1,82 @@
 <x-app-layout>
-<div class="container mx-auto px-4 py-8">
-    <div class="max-w-6xl mx-auto">
-        <h1 class="text-2xl font-bold text-gray-800 mb-2">Certificados de Vinculación</h1>
-        <p class="text-gray-600 mb-6">Estudiantes que completaron los 8 documentos y ya pueden ser certificados.</p>
+    <div class="ui-wrap">
+        <x-ui.hero etiqueta="Documentación" titulo="Certificados de vinculación"
+                   subtitulo="Aquí aparecen los estudiantes que ya tienen todos sus documentos aprobados por el docente, listos para emitir su certificado." />
 
-        @if(session('success'))
-            <div class="bg-green-50 border border-green-200 text-green-800 rounded-lg p-4 mb-6">{{ session('success') }}</div>
-        @endif
-        @if(session('error'))
-            <div class="bg-red-50 border border-red-200 text-red-800 rounded-lg p-4 mb-6">{{ session('error') }}</div>
-        @endif
-
-        @if($inscripciones->isEmpty())
-            <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
-                <p class="text-yellow-800">Todavía no hay estudiantes con los 8 documentos aprobados.</p>
-            </div>
-        @else
-            <div class="bg-white rounded-lg shadow-lg overflow-hidden">
-                <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-gray-200">
-                    <thead class="bg-gray-50">
-                        <tr class="text-left text-xs font-semibold text-gray-500 uppercase">
-                            <th class="py-3 px-4">Estudiante</th>
-                            <th class="py-3 px-4">Cédula</th>
-                            <th class="py-3 px-4">Proyecto</th>
-                            <th class="py-3 px-4">Certificado</th>
-                            <th class="py-3 px-4">Acción</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-gray-100">
-                        @foreach($inscripciones as $inscripcion)
-                            <tr>
-                                <td class="py-3 px-4 text-sm font-semibold text-gray-800">{{ $inscripcion->estudiante->name }}</td>
-                                <td class="py-3 px-4 text-sm text-gray-600">
-                                    {{ $inscripcion->estudiante->cedula ?? '—' }}
-                                    @if(!$inscripcion->estudiante->cedula)
-                                        <a href="{{ route('admin.usuarios.edit', $inscripcion->estudiante->id) }}" class="text-red-600 text-xs hover:underline block">Falta cédula, completar</a>
-                                    @endif
-                                </td>
-                                <td class="py-3 px-4 text-sm text-gray-600">{{ $inscripcion->proyecto->nombre }}</td>
-                                <td class="py-3 px-4">
-                                    @if($inscripcion->certificadoAdministrativo)
-                                        <span class="px-2 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800">Generado</span>
-                                    @else
-                                        <span class="px-2 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-600">Sin generar</span>
-                                    @endif
-                                </td>
-                                <td class="py-3 px-4">
-                                    <div class="flex items-center gap-3">
-                                        <form action="{{ route('admin.certificados.generar', $inscripcion->id) }}" method="POST">
-                                            @csrf
-                                            <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold py-1.5 px-3 rounded-lg transition">
-                                                {{ $inscripcion->certificadoAdministrativo ? 'Regenerar' : 'Generar certificado' }}
-                                            </button>
-                                        </form>
-
-                                        @if($inscripcion->certificadoAdministrativo)
-                                                          <a href="{{ route('admin.certificados.descargar-word', $inscripcion->certificadoAdministrativo->id) }}"
-                                                              class="bg-green-700 hover:bg-green-800 text-white text-xs font-semibold py-1.5 px-3 rounded-lg transition">Descargar Word</a>
-                                        @endif
-                                    </div>
-                                </td>
-                            </tr>
-                        @endforeach
-                    </tbody>
-                </table>
+        @if ($inscripciones->isEmpty())
+            <section class="ui-panel">
+                <div class="ui-vacio" style="padding: 48px 20px;">
+                    <div class="ui-vacio-ico"><svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm-3 2.5L8 22l4-2 4 2-1-4.5M6 3h12a1 1 0 0 1 1 1v6"/></svg></div>
+                    <strong>Todavía no hay estudiantes listos para certificar</strong>
+                    Un estudiante aparece aquí cuando el docente le aprueba todos los documentos requeridos.
+                    <div style="margin-top:14px"><a href="{{ route('admin.tipos-certificado.index') }}" class="ui-btn ui-btn-suave ui-btn-sm">Ver documentos requeridos</a></div>
                 </div>
-            </div>
+            </section>
+        @else
+            <section class="ui-panel">
+                <div class="ui-tabla-wrap">
+                    <table class="ui-tabla">
+                        <thead>
+                            <tr><th>Estudiante</th><th>Cédula</th><th>Proyecto</th><th>Horas cumplidas</th><th>Certificado</th><th style="text-align:right">Acciones</th></tr>
+                        </thead>
+                        <tbody>
+                            @foreach ($inscripciones as $inscripcion)
+                                @php
+                                    $est = $inscripcion->estudiante;
+                                    $ini = mb_strtoupper(collect(preg_split('/\s+/', $est->name))->take(2)->map(fn ($p) => mb_substr($p, 0, 1))->implode(''));
+                                    $cert = $inscripcion->certificadoAdministrativo;
+                                @endphp
+                                <tr>
+                                    <td>
+                                        <div class="ui-celda">
+                                            <span class="ui-avatar">{{ $ini }}</span>
+                                            <div style="min-width:0"><strong>{{ $est->name }}</strong><small>{{ $est->email }}</small></div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        @if ($est->cedula)
+                                            {{ $est->cedula }}
+                                        @else
+                                            <a href="{{ route('admin.usuarios.edit', $est->id) }}" class="ui-tag rojo" style="text-decoration:none">Falta cédula · completar</a>
+                                        @endif
+                                    </td>
+                                    <td>{{ $inscripcion->proyecto->nombre }}</td>
+                                    <td>
+                                        @if ((int) $inscripcion->horas_cumplidas > 0)
+                                            <span class="ui-num">{{ $inscripcion->horas_cumplidas }} h</span>
+                                        @else
+                                            <span class="ui-tag ambar" title="El docente debe registrarlas en Certificados">Sin registrar</span>
+                                        @endif
+                                    </td>
+                                    <td>
+                                        @if ($cert)
+                                            <span class="ui-tag verde">Generado</span>
+                                            <small style="display:block;margin-top:4px;color:var(--ui-texto-3);font-size:12px">{{ $cert->numero_certificado }}</small>
+                                        @else
+                                            <span class="ui-tag gris">Sin generar</span>
+                                        @endif
+                                    </td>
+                                    <td>
+                                        <div class="ui-acciones">
+                                            <form action="{{ route('admin.certificados.generar', $inscripcion->id) }}" method="POST"
+                                                  data-confirm-title="{{ $cert ? '¿Regenerar el certificado?' : '¿Generar el certificado?' }}"
+                                                  data-confirm-text="Se creará el certificado de vinculación de {{ $est->name }}."
+                                                  data-confirm-button="{{ $cert ? 'Sí, regenerar' : 'Sí, generar' }}">
+                                                @csrf
+                                                <button type="submit" class="ui-btn ui-btn-primario ui-btn-sm">{{ $cert ? 'Regenerar' : 'Generar certificado' }}</button>
+                                            </form>
+                                            @if ($cert)
+                                                <a href="{{ route('admin.certificados.descargar', $cert->id) }}" class="ui-btn ui-btn-suave ui-btn-sm">PDF</a>
+                                                <a href="{{ route('admin.certificados.descargar-word', $cert->id) }}" class="ui-btn ui-btn-suave ui-btn-sm">Word</a>
+                                            @endif
+                                        </div>
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            </section>
         @endif
     </div>
-</div>
 </x-app-layout>

@@ -1,48 +1,33 @@
-<section>
-    <header>
-        <h2 class="text-lg font-medium text-gray-900">
-            {{ __('Update Password') }}
-        </h2>
+<section class="ui-panel">
+    <div class="ui-panel-head">
+        <h3><span class="ui-chip-ico"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M7 11V8a5 5 0 0 1 10 0v3M6 11h12a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-8a1 1 0 0 1 1-1Z"/></svg></span> Cambiar contraseña</h3>
+    </div>
 
-        <p class="mt-1 text-sm text-gray-600">
-            {{ __('Ensure your account is using a long, random password to stay secure.') }}
-        </p>
-    </header>
-
-    <form method="post" action="{{ route('password.update') }}" class="mt-6 space-y-6">
+    <form method="post" action="{{ route('password.update') }}" class="ui-panel-body"
+          data-confirm-title="¿Cambiar tu contraseña?" data-confirm-text="La usarás la próxima vez que inicies sesión." data-confirm-button="Sí, cambiar">
         @csrf
         @method('put')
 
-        <div>
-            <x-input-label for="update_password_current_password" :value="__('Current Password')" />
-            <x-text-input id="update_password_current_password" name="current_password" type="password" class="mt-1 block w-full" autocomplete="current-password" />
-            <x-input-error :messages="$errors->updatePassword->get('current_password')" class="mt-2" />
+        <div style="display:flex;flex-direction:column;gap:16px">
+            <div class="ui-campo">
+                <label for="update_password_current_password">Contraseña actual</label>
+                <input id="update_password_current_password" name="current_password" type="password" class="ui-input" autocomplete="current-password">
+                @foreach ($errors->updatePassword->get('current_password') as $mensaje) <span class="error">{{ $mensaje }}</span> @endforeach
+            </div>
+            <div class="ui-campo">
+                <label for="update_password_password">Nueva contraseña</label>
+                <input id="update_password_password" name="password" type="password" class="ui-input" autocomplete="new-password">
+                @foreach ($errors->updatePassword->get('password') as $mensaje) <span class="error">{{ $mensaje }}</span> @endforeach
+            </div>
+            <div class="ui-campo">
+                <label for="update_password_password_confirmation">Repite la nueva contraseña</label>
+                <input id="update_password_password_confirmation" name="password_confirmation" type="password" class="ui-input" autocomplete="new-password">
+                @foreach ($errors->updatePassword->get('password_confirmation') as $mensaje) <span class="error">{{ $mensaje }}</span> @endforeach
+            </div>
         </div>
 
-        <div>
-            <x-input-label for="update_password_password" :value="__('New Password')" />
-            <x-text-input id="update_password_password" name="password" type="password" class="mt-1 block w-full" autocomplete="new-password" />
-            <x-input-error :messages="$errors->updatePassword->get('password')" class="mt-2" />
-        </div>
-
-        <div>
-            <x-input-label for="update_password_password_confirmation" :value="__('Confirm Password')" />
-            <x-text-input id="update_password_password_confirmation" name="password_confirmation" type="password" class="mt-1 block w-full" autocomplete="new-password" />
-            <x-input-error :messages="$errors->updatePassword->get('password_confirmation')" class="mt-2" />
-        </div>
-
-        <div class="flex items-center gap-4">
-            <x-primary-button>{{ __('Save') }}</x-primary-button>
-
-            @if (session('status') === 'password-updated')
-                <p
-                    x-data="{ show: true }"
-                    x-show="show"
-                    x-transition
-                    x-init="setTimeout(() => show = false, 2000)"
-                    class="text-sm text-gray-600"
-                >{{ __('Saved.') }}</p>
-            @endif
+        <div class="pf-botones">
+            <button type="submit" class="ui-btn ui-btn-primario">Actualizar contraseña</button>
         </div>
     </form>
 </section>

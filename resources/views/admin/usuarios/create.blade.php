@@ -1,14 +1,11 @@
 <x-app-layout>
-    <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            Registrar Nuevo Usuario
-        </h2>
-    </x-slot>
 
-    <div class="py-8">
-        <div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="bg-white shadow rounded-lg p-6">
-                <form action="{{ route('admin.usuarios.store') }}" method="POST">
+    <div>
+        <div class="ui-wrap" style="max-width: 860px;">
+            <x-ui.hero :volver="route('admin.usuarios.index')" volver-texto="Usuarios" titulo="Nuevo usuario" subtitulo="Crea la cuenta de un estudiante, docente o administrador." />
+
+            <div class="bg-white shadow rounded-lg p-6 sm:p-8">
+                <form action="{{ route('admin.usuarios.store') }}" method="POST" data-confirm-title="¿Guardar este registro?" data-confirm-text="Revisa que los datos sean correctos." data-confirm-button="Sí, guardar">
                     @csrf
 
                     <div class="mb-6">
@@ -54,7 +51,10 @@
                     </div>
 
                     <div class="mb-6">
-                        <label class="block font-medium text-sm text-gray-700 mb-2">Carrera</label>
+                        <div class="flex items-center justify-between mb-2">
+                            <label class="block font-medium text-sm text-gray-700">Carrera</label>
+                            <a href="{{ route('admin.carreras.create') }}" class="text-sm font-semibold" style="color:#006B47">+ Nueva carrera</a>
+                        </div>
                         <select name="carrera_id"
                                 class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm px-3 py-2 focus:outline-none focus:border-indigo-500">
                             <option value="">-- Sin carrera (solo aplica a estudiantes) --</option>
@@ -89,14 +89,12 @@
                     </div>
 
                     <div class="flex flex-col sm:flex-row gap-4">
-                        <button type="submit" class="px-6 py-2 rounded-lg text-white font-medium hover:opacity-90 order-1 sm:order-none"
-                                style="background-color: #006B47;">
+                        <button type="submit" class="ui-btn ui-btn-primario">
+                            <svg fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m5 13 4 4L19 7"/></svg>
                             Registrar Usuario
                         </button>
                         <a href="{{ route('admin.usuarios.index') }}"
-                           class="px-6 py-2 rounded-lg text-gray-700 font-medium border border-gray-300 hover:bg-gray-50">
-                            Cancelar
-                        </a>
+                           class="ui-btn ui-btn-suave">Cancelar</a>
                     </div>
                 </form>
             </div>

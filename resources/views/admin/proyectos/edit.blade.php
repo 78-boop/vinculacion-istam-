@@ -1,14 +1,11 @@
 <x-app-layout>
-    <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            Editar Proyecto de Vinculación
-        </h2>
-    </x-slot>
 
-    <div class="py-8">
-        <div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="bg-white shadow rounded-lg p-6">
-                <form action="{{ route('admin.proyectos.update', $proyecto) }}" method="POST">
+    <div>
+        <div class="ui-wrap" style="max-width: 860px;">
+            <x-ui.hero :volver="route('admin.proyectos.index')" volver-texto="Proyectos" titulo="Editar proyecto" subtitulo="Actualiza los datos del proyecto." />
+
+            <div class="bg-white shadow rounded-lg p-6 sm:p-8">
+                <form action="{{ route('admin.proyectos.update', $proyecto) }}" method="POST" data-confirm-title="¿Guardar los cambios?" data-confirm-text="Se actualizará la información." data-confirm-button="Sí, guardar">
                     @csrf
                     @method('PUT')
 
@@ -65,14 +62,12 @@
                     </div>
 
                     <div class="flex flex-col sm:flex-row gap-4">
-                        <button type="submit" class="px-6 py-2 rounded-lg text-white font-medium hover:opacity-90"
-                                style="background-color: #006B47;">
+                        <button type="submit" class="ui-btn ui-btn-primario">
+                            <svg fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m5 13 4 4L19 7"/></svg>
                             Guardar Cambios
                         </button>
                         <a href="{{ route('admin.proyectos.index') }}"
-                           class="px-6 py-2 rounded-lg text-gray-700 font-medium border border-gray-300 hover:bg-gray-50">
-                            Cancelar
-                        </a>
+                           class="ui-btn ui-btn-suave">Cancelar</a>
                     </div>
                 </form>
             </div>

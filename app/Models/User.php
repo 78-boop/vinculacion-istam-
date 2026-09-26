@@ -26,6 +26,7 @@ class User extends Authenticatable
         'profile_photo_path',
         'password',
         'role',
+        'permitir_nueva_actividad',
     ];
 
     /**
@@ -48,6 +49,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'permitir_nueva_actividad' => 'boolean',
         ];
     }
 

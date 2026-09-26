@@ -16,10 +16,9 @@ class DocenteCertificadoController extends Controller
     {
         $docente = Auth::user();
 
-        $inscripciones = Inscripcion::whereHas('proyecto', function ($query) use ($docente) {
-                $query->where('docente_id', $docente->id);
-            })
-            ->with(['estudiante.carrera', 'proyecto', 'certificadosEstudiante'])
+        // Estudiantes de sus proyectos y de las actividades que el administrador le asignó
+        $inscripciones = Inscripcion::delDocente($docente->id)
+            ->with(['estudiante.carrera', 'proyecto', 'certificadosVigentes'])
             ->get();
 
         $totalTipos = TipoCertificado::where('activo', true)->count();
@@ -35,8 +34,8 @@ class DocenteCertificadoController extends Controller
     {
         $docente = Auth::user();
 
-        if ($inscripcion->proyecto->docente_id !== $docente->id) {
-            abort(403, 'No sos el tutor de este estudiante.');
+        if (! $inscripcion->esDelDocente($docente->id)) {
+            abort(403, 'Este estudiante no está en tus proyectos ni en tus actividades.');
         }
 
         $request->validate([
@@ -53,8 +52,8 @@ class DocenteCertificadoController extends Controller
     {
         $docente = Auth::user();
 
-        if ($inscripcion->proyecto->docente_id !== $docente->id) {
-            abort(403, 'No sos el tutor de este estudiante.');
+        if (! $inscripcion->esDelDocente($docente->id)) {
+            abort(403, 'Este estudiante no está en tus proyectos ni en tus actividades.');
         }
 
         $inscripcion->load(['estudiante', 'proyecto', 'certificadosEstudiante.tipoCertificado']);
@@ -75,7 +74,7 @@ class DocenteCertificadoController extends Controller
         $docente = Auth::user();
         $inscripcion = $certificado->inscripcion()->with('proyecto')->first();
 
-        if ($inscripcion->proyecto->docente_id !== $docente->id) {
+        if (! $inscripcion->esDelDocente($docente->id)) {
             return response()->json(['error' => 'No autorizado'], 403);
         }
 
@@ -96,7 +95,7 @@ class DocenteCertificadoController extends Controller
                 [
                     'fecha_generacion' => now()->format('Y-m-d'),
                     'numero_certificado' => 'CERT-' . $inscripcion->id . '-' . now()->format('YmdHis'),
-                    'horas_certificadas' => $inscripcion->horas_requeridas ?? 0,
+                    'horas_certificadas' => (int) $inscripcion->horas_cumplidas,
                     'estado' => 'aprobado',
                     'aprobado_por' => $docente->id,
                     'fecha_aprobacion' => now()->format('Y-m-d'),
@@ -118,7 +117,7 @@ class DocenteCertificadoController extends Controller
         $docente = Auth::user();
         $inscripcion = $certificado->inscripcion()->with('proyecto')->first();
 
-        if ($inscripcion->proyecto->docente_id !== $docente->id) {
+        if (! $inscripcion->esDelDocente($docente->id)) {
             return response()->json(['error' => 'No autorizado'], 403);
         }
 

@@ -74,7 +74,7 @@
 <body>
 
     <div class="membrete">
-        <img src="{{ public_path('images/membrete-istam.png') }}">
+        <img src="{{ public_path('images/membrete-istam-pdf.jpg') }}">
     </div>
 
     <div class="contenido">

@@ -1,14 +1,18 @@
 <x-app-layout>
-    <div class="py-8">
-        <div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="bg-white shadow rounded-lg p-6">
-                <h1 class="text-2xl font-bold text-gray-900 mb-6">Nuevo documento requerido</h1>
-                <form action="{{ route('admin.tipos-certificado.store') }}" method="POST" class="space-y-5">
+    <div>
+        <div class="ui-wrap" style="max-width: 860px;">
+            <x-ui.hero :volver="route('admin.tipos-certificado.index')" volver-texto="Documentos requeridos" titulo="Nuevo documento requerido" subtitulo="Agrega un documento que los estudiantes deberán subir." />
+
+            <div class="bg-white shadow rounded-lg p-6 sm:p-8">
+                <form action="{{ route('admin.tipos-certificado.store') }}" method="POST" data-confirm-title="¿Guardar este registro?" data-confirm-text="Revisa que los datos sean correctos." data-confirm-button="Sí, guardar" class="space-y-5">
                     @csrf
                     @include('admin.tipos-certificado.form')
                     <div class="flex justify-end gap-3">
-                        <a href="{{ route('admin.tipos-certificado.index') }}" class="px-4 py-2 text-gray-600">Cancelar</a>
-                        <button class="px-4 py-2 rounded-lg bg-green-800 hover:bg-green-900 text-white font-semibold">Guardar</button>
+                        <a href="{{ route('admin.tipos-certificado.index') }}" class="ui-btn ui-btn-suave">Cancelar</a>
+                        <button type="submit" class="ui-btn ui-btn-primario">
+                            <svg fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m5 13 4 4L19 7"/></svg>
+                            Guardar
+                        </button>
                     </div>
                 </form>
             </div>

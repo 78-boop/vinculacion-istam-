@@ -13,7 +13,6 @@ use App\Http\Controllers\Admin\InscripcionController;
 use App\Http\Controllers\Admin\UsuarioController;
 use App\Http\Controllers\Admin\CertificadoAdministrativoController;
 use App\Http\Controllers\Admin\TipoCertificadoController;
-use App\Models\RegistroHora;
 
 Route::get('/', function () {
     return view('welcome');
@@ -25,43 +24,6 @@ Route::get('/language/{locale}', function (string $locale) {
     }
     return back();
 })->name('language.switch');
-// RUTA TEMPORAL PARA LIMPIAR DATOS DUPLICADOS
-Route::get('/limpiar-datos', function () {
-    $registros = RegistroHora::orderBy('id')->get();
-    $seen = [];
-    $eliminados = 0;
-
-    foreach ($registros as $registro) {
-        $key = $registro->inscripcion_id . '-' . $registro->fecha . '-' . $registro->horas_registradas;
-
-        if (isset($seen[$key])) {
-            $registro->delete();
-            $eliminados++;
-        } else {
-            $seen[$key] = true;
-        }
-    }
-
-    return "✅ Limpieza completada! Se eliminaron $eliminados registros duplicados. <br><a href='/registro-horas'>Volver al registro de horas</a>";
-});
-Route::get('/limpiar-duplicados-total', function () {
-    $registros = RegistroHora::all();
-    $seen = [];
-    $eliminados = 0;
-
-    foreach ($registros as $registro) {
-        $key = $registro->inscripcion_id . '-' . $registro->fecha;
-
-        if (isset($seen[$key])) {
-            $registro->delete();
-            $eliminados++;
-        } else {
-            $seen[$key] = true;
-        }
-    }
-
-    return "✅ Limpieza de duplicados completada! Se eliminaron $eliminados registros. <br><a href='/registro-horas'>Volver al registro de horas</a>";
-});
 
 Route::middleware('auth')->group(function () {
     Route::get('/dashboard', [App\Http\Controllers\Admin\DashboardController::class, 'index'])
@@ -79,6 +41,11 @@ Route::middleware('auth')->group(function () {
         ->name('certificados-estudiante.index');
     Route::get('/mis-certificados/{certificado}/descargar', [CertificadoEstudianteController::class, 'descargar'])
         ->name('certificados-estudiante.descargar');
+    // Certificado de vinculación: el estudiante lo descarga una vez que el administrador lo emite
+    Route::get('/mis-certificados/vinculacion/{certificado}/pdf', [CertificadoAdministrativoController::class, 'descargarEstudiante'])
+        ->name('certificados-estudiante.vinculacion.pdf');
+    Route::get('/mis-certificados/vinculacion/{certificado}/word', [CertificadoAdministrativoController::class, 'descargarWordEstudiante'])
+        ->name('certificados-estudiante.vinculacion.word');
 
     // ACTIVIDADES DE VINCULACIÓN - ESTUDIANTE
     Route::get('/mis-actividades-vinculacion', [PostulacionActividadController::class, 'index'])
@@ -88,7 +55,21 @@ Route::middleware('auth')->group(function () {
     Route::delete('/mis-actividades-vinculacion/{postulacion}/cancelar', [PostulacionActividadController::class, 'cancelar'])
         ->name('actividades-vinculacion.cancelar');
 
+    // PROYECTOS Y ACTIVIDADES - ESTUDIANTE (escoge una sola actividad)
+    Route::middleware('role:estudiante')->group(function () {
+        Route::get('/proyectos-disponibles', [\App\Http\Controllers\ProyectoEstudianteController::class, 'index'])
+            ->name('estudiante.proyectos.index');
+        Route::get('/proyectos-disponibles/{proyecto}', [\App\Http\Controllers\ProyectoEstudianteController::class, 'show'])
+            ->name('estudiante.proyectos.show');
+        Route::post('/actividades/{actividad}/inscribirme', [\App\Http\Controllers\ProyectoEstudianteController::class, 'inscribirse'])
+            ->name('estudiante.actividades.inscribirse');
+    });
+
     Route::middleware('role:docente')->group(function () {
+        // DOCENTE: actividades creadas por el administrador en sus proyectos / a su cargo
+        Route::get('/docente/mis-actividades', [\App\Http\Controllers\DocenteActividadController::class, 'index'])
+            ->name('docente.actividades.index');
+
         Route::get('/docente/proyectos/crear', [\App\Http\Controllers\Admin\ProyectoVinculacionController::class, 'crearPropuesta'])
             ->name('docente.proyectos.create');
         Route::post('/docente/proyectos', [\App\Http\Controllers\Admin\ProyectoVinculacionController::class, 'storePropuesta'])
@@ -123,13 +104,22 @@ Route::middleware('auth')->group(function () {
 });
 
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
-    Route::resource('periodos', PeriodoAcademicoController::class);
-    Route::resource('proyectos', ProyectoVinculacionController::class);
-    Route::resource('inscripciones', \App\Http\Controllers\Admin\InscripcionController::class)->parameters(['inscripciones' => 'inscripcione']);
-    Route::resource('actividades', ActividadController::class)->parameters(['actividades' => 'actividad']);
-    Route::resource('usuarios', UsuarioController::class)->parameters(['usuarios' => 'usuario']);
+    Route::resource('periodos', PeriodoAcademicoController::class)->except(['show']);
+    Route::resource('carreras', \App\Http\Controllers\Admin\CarreraController::class)->except(['show']);
+    Route::resource('proyectos', ProyectoVinculacionController::class)->except(['show']);
+    Route::resource('inscripciones', \App\Http\Controllers\Admin\InscripcionController::class)->parameters(['inscripciones' => 'inscripcione'])->except(['show']);
+    Route::resource('actividades', ActividadController::class)->parameters(['actividades' => 'actividad'])->except(['show']);
+    // Carga masiva de usuarios (Excel / CSV)
+    Route::get('/usuarios/importar', [\App\Http\Controllers\Admin\UsuarioImportController::class, 'create'])->name('usuarios.importar');
+    Route::post('/usuarios/importar', [\App\Http\Controllers\Admin\UsuarioImportController::class, 'store'])->name('usuarios.importar.store');
+    Route::get('/usuarios/importar/plantilla', [\App\Http\Controllers\Admin\UsuarioImportController::class, 'plantilla'])->name('usuarios.importar.plantilla');
+    Route::resource('usuarios', UsuarioController::class)->parameters(['usuarios' => 'usuario'])->except(['show']);
     Route::resource('tipos-certificado', TipoCertificadoController::class)
-        ->parameters(['tipos-certificado' => 'tiposCertificado']);
+        ->parameters(['tipos-certificado' => 'tiposCertificado'])->except(['show']);
+
+    // ADMIN: dar / quitar permiso a un estudiante para inscribirse en otra actividad
+    Route::post('/usuarios/{usuario}/permitir-actividad', [UsuarioController::class, 'permitirActividad'])
+        ->name('usuarios.permitir-actividad');
 
     // ADMIN: aprobar/rechazar proyectos propuestos por un docente
     Route::post('/proyectos/{proyecto}/aprobar', [ProyectoVinculacionController::class, 'aprobar'])

@@ -1,78 +1,77 @@
+@php
+    $pendientes = $proyectos->where('estado', 'pendiente')->count();
+    $estados = ['pendiente' => ['Pendiente', 'ambar'], 'aprobado' => ['Aprobado', 'verde'], 'rechazado' => ['Rechazado', 'rojo']];
+@endphp
+
 <x-app-layout>
-
-    <div class="py-8">
-        <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-
-            @if (session('success'))
-                <div class="mb-4 p-4 bg-green-100 text-green-700 rounded">
-                    {{ session('success') }}
-                </div>
-            @endif
-
-            <div class="mb-4">
-                <a href="{{ route('admin.proyectos.create') }}" class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700">
-                    + Nuevo Proyecto
+    <div class="ui-wrap">
+        <x-ui.hero etiqueta="Gestión académica" titulo="Proyectos de vinculación"
+                   :subtitulo="$proyectos->count() . ' proyectos registrados' . ($pendientes ? ' · ' . $pendientes . ' propuestas esperan tu aprobación' : '')">
+            <x-slot:acciones>
+                <a href="{{ route('admin.proyectos.create') }}" class="ui-btn ui-btn-blanco">
+                    <svg fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path stroke-linecap="round" d="M12 5v14M5 12h14"/></svg>
+                    Nuevo proyecto
                 </a>
-            </div>
+            </x-slot:acciones>
+        </x-ui.hero>
 
-            <div class="bg-white shadow rounded-lg overflow-hidden">
-                <div class="overflow-x-auto">
-                <table class="w-full text-left">
-                    <thead class="bg-gray-100">
-                        <tr>
-                            <th class="p-3">Nombre</th>
-                            <th class="p-3">Docente</th>
-                            <th class="p-3">Periodo</th>
-                            <th class="p-3">Horas req.</th>
-                            <th class="p-3">Estado</th>
-                            <th class="p-3">Acciones</th>
-                        </tr>
+        <section class="ui-panel">
+            <div class="ui-tabla-wrap">
+                <table class="ui-tabla">
+                    <thead>
+                        <tr><th>Proyecto</th><th>Docente</th><th>Período</th><th>Horas req.</th><th>Estado</th><th style="text-align:right">Acciones</th></tr>
                     </thead>
                     <tbody>
                         @forelse ($proyectos as $proyecto)
-                            <tr class="border-t">
-                                <td class="p-3">{{ $proyecto->nombre }}</td>
-                                <td class="p-3">{{ $proyecto->docente->name ?? 'Sin asignar' }}</td>
-                                <td class="p-3">{{ $proyecto->periodoAcademico->nombre ?? '—' }}</td>
-                                <td class="p-3">{{ $proyecto->horas_requeridas }}</td>
-                                <td class="p-3">
-                                    <span @class([
-                                        'px-2 py-1 rounded-full text-xs font-semibold',
-                                        'bg-yellow-100 text-yellow-700' => $proyecto->estado === 'pendiente',
-                                        'bg-green-100 text-green-700' => $proyecto->estado === 'aprobado',
-                                        'bg-red-100 text-red-700' => $proyecto->estado === 'rechazado',
-                                    ])>
-                                        {{ ucfirst($proyecto->estado) }}
-                                    </span>
+                            <tr>
+                                <td>
+                                    <div class="ui-celda">
+                                        <span class="ui-celda-ini">{{ mb_strtoupper(mb_substr($proyecto->nombre, 0, 1)) }}</span>
+                                        <div style="min-width:0">
+                                            <strong>{{ $proyecto->nombre }}</strong>
+                                            @if ($proyecto->descripcion) <small>{{ \Illuminate\Support\Str::limit($proyecto->descripcion, 60) }}</small> @endif
+                                        </div>
+                                    </div>
                                 </td>
-                                <td class="p-3 space-x-2 whitespace-nowrap">
-                                    @if ($proyecto->estado === 'pendiente')
-                                        <form action="{{ route('admin.proyectos.aprobar', $proyecto) }}" method="POST" class="inline">
+                                <td>{{ $proyecto->docente->name ?? 'Sin asignar' }}</td>
+                                <td>{{ $proyecto->periodoAcademico->nombre ?? '—' }}</td>
+                                <td class="ui-num">{{ $proyecto->horas_requeridas ?? '—' }}</td>
+                                <td><span class="ui-tag {{ $estados[$proyecto->estado][1] ?? 'gris' }}">{{ $estados[$proyecto->estado][0] ?? ucfirst($proyecto->estado) }}</span></td>
+                                <td>
+                                    <div class="ui-acciones">
+                                        @if ($proyecto->estado === 'pendiente')
+                                            <form action="{{ route('admin.proyectos.aprobar', $proyecto) }}" method="POST"
+                                                  data-confirm-title="¿Aprobar «{{ $proyecto->nombre }}»?" data-confirm-text="Quedará visible para los estudiantes." data-confirm-button="Sí, aprobar">
+                                                @csrf
+                                                <button type="submit" class="ui-btn ui-btn-primario ui-btn-sm">Aprobar</button>
+                                            </form>
+                                            <form action="{{ route('admin.proyectos.rechazar', $proyecto) }}" method="POST"
+                                                  data-confirm-title="¿Rechazar esta propuesta?" data-confirm-text="La propuesta quedará rechazada." data-confirm-button="Sí, rechazar">
+                                                @csrf
+                                                <button type="submit" class="ui-btn ui-btn-peligro ui-btn-sm">Rechazar</button>
+                                            </form>
+                                        @endif
+                                        <a href="{{ route('admin.proyectos.edit', $proyecto) }}" class="ui-btn ui-btn-suave ui-btn-sm">Editar</a>
+                                        <form action="{{ route('admin.proyectos.destroy', $proyecto) }}" method="POST"
+                                              data-confirm-title="¿Eliminar «{{ $proyecto->nombre }}»?" data-confirm-text="Esta acción no se puede deshacer.">
                                             @csrf
-                                            <button type="submit" class="text-green-600">Aprobar</button>
+                                            @method('DELETE')
+                                            <button type="submit" class="ui-btn ui-btn-peligro ui-btn-sm">Eliminar</button>
                                         </form>
-                                        <form action="{{ route('admin.proyectos.rechazar', $proyecto) }}" method="POST" class="inline" data-confirm-title="¿Rechazar esta propuesta?" data-confirm-text="La propuesta quedará rechazada.">
-                                            @csrf
-                                            <button type="submit" class="text-red-600">Rechazar</button>
-                                        </form>
-                                    @endif
-                                    <a href="{{ route('admin.proyectos.edit', $proyecto) }}" class="text-blue-600">Editar</a>
-                                    <form action="{{ route('admin.proyectos.destroy', $proyecto) }}" method="POST" class="inline" data-confirm-title="¿Eliminar este proyecto?" data-confirm-text="Esta acción no se puede deshacer.">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="text-red-600">Eliminar</button>
-                                    </form>
+                                    </div>
                                 </td>
                             </tr>
                         @empty
-                            <tr>
-                                <td colspan="6" class="p-3 text-center text-gray-500">No hay proyectos registrados.</td>
-                            </tr>
+                            <tr><td colspan="6">
+                                <div class="ui-vacio">
+                                    <strong>Aún no hay proyectos</strong>
+                                    <a href="{{ route('admin.proyectos.create') }}" class="ui-btn ui-btn-primario ui-btn-sm" style="margin-top:10px">Crear el primero</a>
+                                </div>
+                            </td></tr>
                         @endforelse
                     </tbody>
                 </table>
-                </div>
             </div>
-        </div>
+        </section>
     </div>
 </x-app-layout>

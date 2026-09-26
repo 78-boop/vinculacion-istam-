@@ -34,7 +34,6 @@ class DashboardController extends Controller
         $totalInscripciones = Inscripcion::count();
         $totalActividades = Actividad::count();
         $actividadesPendientes = Actividad::where('estado', 'pendiente')->count();
-        $horasTotales = Actividad::where('estado', 'aprobada')->sum('horas');
 
         $ultimasActividades = Actividad::with(['inscripcion.estudiante', 'inscripcion.proyecto', 'proyecto', 'inscripciones.estudiante'])
             ->latest('created_at')
@@ -61,13 +60,24 @@ class DashboardController extends Controller
             ->sortByDesc('actividades_aprobadas')
             ->values();
 
+        $carreras = \App\Models\Carrera::withCount(['estudiantes', 'actividadesVinculacion'])
+            ->where('activo', true)
+            ->orderByDesc('estudiantes_count')
+            ->get()
+            ->each(fn ($carrera) => $carrera->actividades_count = $carrera->actividades()->count());
+
+        $periodoActivo = PeriodoAcademico::where('activo', true)->latest('fecha_inicio')->first();
+        $totalUsuarios = \App\Models\User::count();
+
         return view('admin.dashboard.dashboard', compact(
+            'carreras',
+            'periodoActivo',
+            'totalUsuarios',
             'totalPeriodos',
             'totalProyectos',
             'totalInscripciones',
             'totalActividades',
             'actividadesPendientes',
-            'horasTotales',
             'ultimasActividades',
             'estudiantesActivos',
             'proyectosActivos'
@@ -82,16 +92,23 @@ class DashboardController extends Controller
             ->with(['proyecto.docente', 'postulacionesActividad.actividad.carrera'])
             ->get();
 
-        $certificadosEstudiante = \App\Models\CertificadoEstudiante::whereIn('inscripcion_id', $inscripciones->pluck('id'))
+        $certificadosEstudiante = \App\Models\CertificadoEstudiante::vigentes()->whereIn('inscripcion_id', $inscripciones->pluck('id'))
             ->with(['inscripcion.proyecto', 'tipoCertificado'])
             ->latest('updated_at')
             ->get();
 
-        $inscripcionIds = $inscripciones->pluck('proyecto_vinculacion_id')->toArray();
-        $proyectosDisponibles = ProyectoVinculacion::whereNotIn('id', $inscripcionIds)
-            ->where('estado', 'aprobado')
+        // Proyectos abiertos con cuántas actividades aceptan estudiantes todavía
+        $proyectosDisponibles = ProyectoVinculacion::where('estado', 'aprobado')
             ->with('docente')
+            ->withCount(['actividades as actividades_disponibles_count' => fn ($q) => $q
+                ->where('estado', 'aprobada')
+                ->where(fn ($f) => $f->whereNull('fecha_finalizacion')->orWhereDate('fecha_finalizacion', '>=', today()))])
+            ->orderBy('nombre')
             ->get();
+        $proyectosInscritos = $inscripciones->pluck('proyecto_vinculacion_id')->all();
+
+        // La única actividad en la que participa el estudiante
+        $miActividad = \App\Http\Controllers\ProyectoEstudianteController::actividadDe($user);
 
         $totalTipos = \App\Models\TipoCertificado::where('activo', true)->count();
         $certificadosAprobados = $certificadosEstudiante->where('estado', 'aprobado')->count();
@@ -100,12 +117,25 @@ class DashboardController extends Controller
 
         $ultimosCertificados = $certificadosEstudiante->take(5);
 
+        // Actividades que el administrador registró con este estudiante como participante
+        $inscripcionIdsEstudiante = $inscripciones->pluck('id');
+        $actividadesAsignadas = Actividad::with(['proyecto', 'docente'])
+            ->where(function ($query) use ($inscripcionIdsEstudiante) {
+                $query->whereHas('inscripciones', fn ($q) => $q->whereIn('inscripcions.id', $inscripcionIdsEstudiante))
+                    ->orWhereIn('inscripcion_id', $inscripcionIdsEstudiante);
+            })
+            ->orderByDesc('fecha_inicio')
+            ->get();
+
         $todasPostulaciones = $inscripciones->flatMap->postulacionesActividad;
         $actividadesAprobadas = $todasPostulaciones->where('estado', 'aprobada');
         $actividadPendiente = $todasPostulaciones->where('estado', 'pendiente')->first();
 
         return view('admin.estudiante.dashboard', compact(
             'inscripciones',
+            'actividadesAsignadas',
+            'miActividad',
+            'proyectosInscritos',
             'totalTipos',
             'certificadosAprobados',
             'certificadosPendientes',
@@ -121,38 +151,55 @@ class DashboardController extends Controller
     {
         $user = Auth::user();
 
-        $certificadosPendientes = \App\Models\CertificadoEstudiante::where('estado', 'pendiente')
-            ->whereHas('inscripcion.proyecto', function ($query) use ($user) {
-                $query->where('docente_id', $user->id);
-            })
+        // Todo sale de lo que registra el administrador: proyectos donde es docente
+        // y actividades de las que lo hizo responsable.
+        $inscripcionesDocente = Inscripcion::delDocente($user->id);
+
+        $certificadosPendientes = \App\Models\CertificadoEstudiante::vigentes()->where('estado', 'pendiente')
+            ->whereIn('inscripcion_id', (clone $inscripcionesDocente)->select('id'))
             ->with(['inscripcion.estudiante', 'inscripcion.proyecto', 'tipoCertificado'])
             ->latest('created_at')
             ->paginate(10);
 
-        $certificadosAprobados = \App\Models\CertificadoEstudiante::where('estado', 'aprobado')
-            ->whereHas('inscripcion.proyecto', function ($query) use ($user) {
-                $query->where('docente_id', $user->id);
-            })
+        $certificadosAprobados = \App\Models\CertificadoEstudiante::vigentes()->where('estado', 'aprobado')
+            ->whereIn('inscripcion_id', (clone $inscripcionesDocente)->select('id'))
             ->count();
 
-        $estudiantesAsignados = Inscripcion::whereHas('proyecto', function ($query) use ($user) {
-            $query->where('docente_id', $user->id);
-        })
+        $estudiantesAsignados = (clone $inscripcionesDocente)
             ->with('estudiante')
-            ->distinct('estudiante_id')
-            ->get();
+            ->get()
+            ->unique('estudiante_id')
+            ->values();
 
-        $proyectos = ProyectoVinculacion::where('docente_id', $user->id)
+        $proyectos = ProyectoVinculacion::where(function ($q) use ($user) {
+                $q->where('docente_id', $user->id)
+                    ->orWhereHas('actividades', fn ($a) => $a->where('docente_id', $user->id));
+            })
             ->withCount('inscripciones')
             ->get();
 
-        $postulacionesActividadPendientes = \App\Models\PostulacionActividad::where('estado', 'pendiente')
-            ->whereHas('inscripcion.proyecto', function ($query) use ($user) {
-                $query->where('docente_id', $user->id);
-            })
+        $postulacionesActividadPendientes = 0; // el catálogo por carrera ya no se usa
+
+        $actividadesDocente = Actividad::where(function ($q) use ($user) {
+            $q->where('docente_id', $user->id)
+                ->orWhereHas('proyecto', fn ($p) => $p->where('docente_id', $user->id));
+        });
+
+        $actividadesEnCurso = (clone $actividadesDocente)
+            ->where(fn ($q) => $q->whereNull('fecha_inicio')->orWhereDate('fecha_inicio', '<=', today()))
+            ->where(fn ($q) => $q->whereNull('fecha_finalizacion')->orWhereDate('fecha_finalizacion', '>=', today()))
             ->count();
 
+        $misActividades = (clone $actividadesDocente)
+            ->with('proyecto')
+            ->withCount('inscripciones')
+            ->orderByDesc('fecha_inicio')
+            ->limit(6)
+            ->get();
+
         return view('admin.docente.dashboard', compact(
+            'misActividades',
+            'actividadesEnCurso',
             'certificadosPendientes',
             'certificadosAprobados',
             'estudiantesAsignados',

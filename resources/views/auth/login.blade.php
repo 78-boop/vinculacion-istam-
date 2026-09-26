@@ -2,7 +2,8 @@
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    @include('partials.pwa')
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Iniciar sesión · Sistema de Vinculación con la Sociedad</title>
 

@@ -24,4 +24,9 @@ class ProyectoVinculacion extends Model
     {
         return $this->hasMany(Inscripcion::class, 'proyecto_vinculacion_id');
     }
+
+    public function actividades()
+    {
+        return $this->hasMany(Actividad::class, 'proyecto_vinculacion_id');
+    }
 }

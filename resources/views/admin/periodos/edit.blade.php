@@ -1,14 +1,11 @@
 <x-app-layout>
-    <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            Editar Periodo Académico
-        </h2>
-    </x-slot>
 
-    <div class="py-8">
-        <div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="bg-white shadow rounded-lg p-6">
-                <form action="{{ route('admin.periodos.update', $periodo) }}" method="POST">
+    <div>
+        <div class="ui-wrap" style="max-width: 860px;">
+            <x-ui.hero :volver="route('admin.periodos.index')" volver-texto="Períodos" titulo="Editar período académico" subtitulo="Actualiza el nombre, las fechas o el estado del período." />
+
+            <div class="bg-white shadow rounded-lg p-6 sm:p-8">
+                <form action="{{ route('admin.periodos.update', $periodo) }}" method="POST" data-confirm-title="¿Guardar los cambios?" data-confirm-text="Se actualizará la información." data-confirm-button="Sí, guardar">
                     @csrf
                     @method('PUT')
 
@@ -38,8 +35,11 @@
                     </div>
 
                     <div class="flex flex-col sm:flex-row justify-end gap-2">
-                        <a href="{{ route('admin.periodos.index') }}" class="px-4 py-2 text-gray-600">Cancelar</a>
-                        <button type="submit" class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700">Guardar</button>
+                        <a href="{{ route('admin.periodos.index') }}" class="ui-btn ui-btn-suave">Cancelar</a>
+                        <button type="submit" class="ui-btn ui-btn-primario">
+                            <svg fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m5 13 4 4L19 7"/></svg>
+                            Guardar
+                        </button>
                     </div>
                 </form>
             </div>
